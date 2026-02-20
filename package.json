@@ -8,7 +8,8 @@
     "dev": "vite",
     "start": "npm run build:react && npm run build:electron && electron .",
     "build:react": "tsx ./build.mts",
-    "build:electron": "tsc --project tsconfig.electron.json && chmod 755 dist/*"
+    "build:electron": "tsc --project tsconfig.electron.json && chmod 755 dist/*",
+    "prettier": "prettier --write \"**/*.{ts,tsx,md}\""
   },
   "keywords": [],
   "author": "",
