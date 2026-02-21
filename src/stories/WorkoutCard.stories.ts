@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { fn, userEvent, within, expect } from "@storybook/test";
-import { WorkoutCard } from "./WorkoutCard";
+import { expect, fn, userEvent, within } from "storybook/test";
 import type { Exercise } from "./WorkoutCard";
+import { WorkoutCard } from "./WorkoutCard";
 
 // Mock exercise data
 const benchPress170: Exercise = {
@@ -149,7 +149,7 @@ export const Resting: Story = {
  */
 export const JustStarted: Story = {
   args: {
-    personName: "SARAH",
+    personName: "STEVE",
     exercise: deadlift265,
     variant: "active",
   },
@@ -161,7 +161,7 @@ export const JustStarted: Story = {
  */
 export const AlmostDone: Story = {
   args: {
-    personName: "MIKE",
+    personName: "SERGIO",
     exercise: row241,
     variant: "active",
   },
@@ -173,7 +173,7 @@ export const AlmostDone: Story = {
  */
 export const Completed: Story = {
   args: {
-    personName: "ALEX",
+    personName: "VICTORIA",
     exercise: squat225Completed,
     variant: "completed",
   },
@@ -185,7 +185,7 @@ export const Completed: Story = {
  */
 export const HeavyWeight: Story = {
   args: {
-    personName: "JAKE",
+    personName: "KAKES",
     exercise: deadlift405,
     variant: "active",
   },
@@ -197,7 +197,7 @@ export const HeavyWeight: Story = {
  */
 export const VariableReps: Story = {
   args: {
-    personName: "EMMA",
+    personName: "NOAH",
     exercise: overheadPress95,
     variant: "active",
   },
@@ -238,7 +238,7 @@ export const Interactive: Story = {
  */
 export const ShortRest: Story = {
   args: {
-    personName: "SARAH",
+    personName: "STEVE",
     exercise: deadlift265,
     restTimeRemaining: 45, // 0:45
     variant: "resting",

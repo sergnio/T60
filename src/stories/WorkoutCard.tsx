@@ -58,7 +58,6 @@ export const WorkoutCard = ({
   variant = "active",
   onSetComplete,
 }: WorkoutCardProps) => {
-  // Calculate derived state
   const completedSets = exercise.sets.filter((s) => s.completed).length;
   const totalSets = exercise.sets.length;
   const nextSet = exercise.sets[exercise.currentSetIndex];
