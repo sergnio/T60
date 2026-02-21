@@ -43,3 +43,6 @@ yarn-error.log*
 
 # Jetbrains
 .idea
+
+*storybook.log
+storybook-static
