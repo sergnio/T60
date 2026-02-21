@@ -118,28 +118,28 @@ export const SixPeople: Story = {
         variant: "resting",
       },
       {
-        personName: "SARAH",
+        personName: "NOAH",
         exercise: deadlift265,
         variant: "active",
       },
       {
-        personName: "MIKE",
+        personName: "KAKES",
         exercise: row241,
         variant: "active",
       },
       {
-        personName: "ALEX",
+        personName: "STEVEN",
         exercise: squat225Completed,
         variant: "completed",
       },
       {
-        personName: "EMMA",
+        personName: "VICTORIA",
         exercise: overheadPress95,
         restTimeRemaining: 45,
         variant: "resting",
       },
       {
-        personName: "JAKE",
+        personName: "MARSHA",
         exercise: deadlift405,
         variant: "active",
       },
