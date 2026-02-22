@@ -6,14 +6,13 @@ import { WorkoutCard } from "./WorkoutCard";
 // Mock exercise data
 const benchPress170: Exercise = {
   name: "Bench Press",
-  weight: 170,
   weightUnit: "lbs",
   sets: [
-    { reps: 10, completed: true },
-    { reps: 10, completed: true },
-    { reps: 10, completed: false },
-    { reps: 10, completed: false },
-    { reps: 10, completed: false },
+    { weight: 170, completed: true },
+    { weight: 190, completed: true },
+    { weight: 210, completed: false },
+    { weight: 230, completed: false },
+    { weight: 250, completed: false },
   ],
   currentSetIndex: 2,
 };
@@ -23,11 +22,11 @@ const deadlift265: Exercise = {
   weight: 265,
   weightUnit: "lbs",
   sets: [
-    { reps: 8, completed: false },
-    { reps: 8, completed: false },
-    { reps: 8, completed: false },
-    { reps: 8, completed: false },
-    { reps: 8, completed: false },
+    { weight: 8, completed: false },
+    { weight: 8, completed: false },
+    { weight: 8, completed: false },
+    { weight: 8, completed: false },
+    { weight: 8, completed: false },
   ],
   currentSetIndex: 0,
 };
@@ -37,11 +36,11 @@ const row241: Exercise = {
   weight: 241,
   weightUnit: "lbs",
   sets: [
-    { reps: 12, completed: true },
-    { reps: 12, completed: true },
-    { reps: 12, completed: true },
-    { reps: 12, completed: true },
-    { reps: 12, completed: false },
+    { weight: 12, completed: true },
+    { weight: 12, completed: true },
+    { weight: 12, completed: true },
+    { weight: 12, completed: true },
+    { weight: 12, completed: false },
   ],
   currentSetIndex: 4,
 };
@@ -51,11 +50,11 @@ const squat225Completed: Exercise = {
   weight: 225,
   weightUnit: "lbs",
   sets: [
-    { reps: 10, completed: true },
-    { reps: 10, completed: true },
-    { reps: 10, completed: true },
-    { reps: 10, completed: true },
-    { reps: 10, completed: true },
+    { weight: 10, completed: true },
+    { weight: 10, completed: true },
+    { weight: 10, completed: true },
+    { weight: 10, completed: true },
+    { weight: 10, completed: true },
   ],
   currentSetIndex: 5,
 };
@@ -65,9 +64,9 @@ const deadlift405: Exercise = {
   weight: 405,
   weightUnit: "lbs",
   sets: [
-    { reps: 5, completed: true },
-    { reps: 5, completed: false },
-    { reps: 5, completed: false },
+    { weight: 5, completed: true },
+    { weight: 5, completed: false },
+    { weight: 5, completed: false },
   ],
   currentSetIndex: 1,
 };
@@ -77,10 +76,10 @@ const overheadPress95: Exercise = {
   weight: 95,
   weightUnit: "lbs",
   sets: [
-    { reps: 5, completed: true },
-    { reps: 10, completed: true },
-    { reps: 5, completed: false },
-    { reps: 2, completed: false },
+    { weight: 5, completed: true },
+    { weight: 10, completed: true },
+    { weight: 5, completed: false },
+    { weight: 2, completed: false },
   ],
   currentSetIndex: 2,
 };

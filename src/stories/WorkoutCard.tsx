@@ -2,8 +2,8 @@
  * Represents a single set in a workout exercise
  */
 export interface WorkoutSet {
-  /** Number of repetitions for this set */
-  reps: number;
+  /** Weight for this set */
+  weight: number;
   /** Whether this set has been completed */
   completed: boolean;
 }
@@ -14,8 +14,8 @@ export interface WorkoutSet {
 export interface Exercise {
   /** Name of the exercise (e.g., "Bench Press") */
   name: string;
-  /** Weight being lifted */
-  weight: number;
+  // @deprecated
+  weight?: number;
   /** Unit of weight measurement */
   weightUnit: "lbs" | "kg";
   /** Array of sets for this exercise */
@@ -60,7 +60,8 @@ export const WorkoutCard = ({
 }: WorkoutCardProps) => {
   const completedSets = exercise.sets.filter((s) => s.completed).length;
   const totalSets = exercise.sets.length;
-  const nextSet = exercise.sets[exercise.currentSetIndex];
+  const currentSet = exercise.sets[exercise.currentSetIndex];
+  const nextSet = exercise.sets[exercise.currentSetIndex + 1] || null;
   const isResting = restTimeRemaining !== undefined && restTimeRemaining > 0;
 
   // Format timer as MM:SS
@@ -97,16 +98,13 @@ export const WorkoutCard = ({
       </div>
 
       {/* Exercise info */}
-      <div className="flex flex-col gap-1">
-        <h4 className="text-lg font-semibold text-gray-700 dark:text-gray-200">
-          {exercise.name}
-        </h4>
-        <div className="text-4xl font-extrabold text-gray-900 dark:text-white">
-          {exercise.weight}{" "}
+      <div className="flex gap-1">
+        <h4 className="text-5xl font-semibold text-gray-700 dark:text-gray-200">
+          {currentSet.weight}&nbsp;
           <span className="text-2xl text-gray-500 dark:text-gray-400">
             {exercise.weightUnit}
           </span>
-        </div>
+        </h4>
       </div>
 
       {/* Progress indicator */}
@@ -122,7 +120,7 @@ export const WorkoutCard = ({
                   ? "text-green-500 dark:text-green-400"
                   : "text-gray-300 dark:text-gray-600 cursor-pointer hover:scale-110"
               } ${set.completed ? "cursor-default" : ""}`}
-              aria-label={`Set ${index + 1}: ${set.reps} reps ${set.completed ? "completed" : "pending"}`}
+              aria-label={`Set ${index + 1}: ${set.weight} reps ${set.completed ? "completed" : "pending"}`}
             >
               {set.completed ? "●" : "○"}
             </button>
@@ -150,7 +148,7 @@ export const WorkoutCard = ({
             />
           </svg>
           <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
-            Next: {nextSet.reps} reps
+            Next: {nextSet.weight} lbs
           </span>
         </div>
       )}
