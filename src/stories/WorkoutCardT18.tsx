@@ -97,11 +97,11 @@ const WeightPlateSVG = ({ weight }: { weight: number }) => {
         cy="20"
         r="18"
         fill={getColor()}
-        stroke="#1F2937"
+        stroke="var(--workout-card-svg-stroke)"
         strokeWidth="2"
       />
       <circle cx="20" cy="20" r="8" fill="white" fillOpacity="0.3" />
-      <circle cx="20" cy="20" r="5" fill="#1F2937" />
+      <circle cx="20" cy="20" r="5" fill="var(--workout-card-svg-center)" />
     </svg>
   );
 };

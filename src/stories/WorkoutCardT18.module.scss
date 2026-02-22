@@ -1,10 +1,52 @@
 @keyframes pulse-orange {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0);
+    box-shadow: 0 0 0 0 var(--workout-card-pulse-start);
   }
   50% {
-    box-shadow: 0 0 20px 10px rgba(251, 146, 60, 0.3);
+    box-shadow: 0 0 20px 10px var(--workout-card-pulse-mid);
+  }
+}
+
+:root {
+  /* Text Colors - Semantic naming */
+  --workout-card-text-primary: #1f2937;      /* gray-800 for main text */
+  --workout-card-text-secondary: #6b7280;    /* gray-500 for labels */
+  --workout-card-text-tertiary: #9ca3af;     /* gray-400 for disabled/subtle */
+
+  /* SVG/Graphics Colors */
+  --workout-card-svg-stroke: #1f2937;        /* gray-800 for plate outlines */
+  --workout-card-svg-center: #1f2937;        /* gray-800 for plate centers */
+
+  /* Shadow Colors */
+  --workout-card-shadow-base: rgba(0, 0, 0, 0.1);
+  --workout-card-shadow-hover: rgba(0, 0, 0, 0.1);
+  --workout-card-shadow-active: rgba(251, 146, 60, 0.5);
+
+  /* Pulse Animation Colors */
+  --workout-card-pulse-start: rgba(251, 146, 60, 0);
+  --workout-card-pulse-mid: rgba(251, 146, 60, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Text Colors - Light text on dark backgrounds */
+    --workout-card-text-primary: #f9fafb;      /* gray-50 */
+    --workout-card-text-secondary: #d1d5db;    /* gray-300 */
+    --workout-card-text-tertiary: #6b7280;     /* gray-500 */
+
+    /* SVG/Graphics - Light for visibility on dark backgrounds */
+    --workout-card-svg-stroke: #e5e7eb;        /* gray-200 */
+    --workout-card-svg-center: #f3f4f6;        /* gray-100 */
+
+    /* Shadows - More pronounced in dark mode */
+    --workout-card-shadow-base: rgba(0, 0, 0, 0.3);
+    --workout-card-shadow-hover: rgba(0, 0, 0, 0.4);
+    --workout-card-shadow-active: rgba(251, 146, 60, 0.6);
+
+    /* Pulse - Slightly more intense */
+    --workout-card-pulse-start: rgba(251, 146, 60, 0);
+    --workout-card-pulse-mid: rgba(251, 146, 60, 0.4);
   }
 }
 
@@ -14,20 +56,20 @@
   flex-direction: column;
   padding: 1.5rem;
   border-radius: 1rem;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 15px -3px var(--workout-card-shadow-base);
   border: 1px solid #f3f4f6;
   background: linear-gradient(to bottom right, #ffffff, #f9fafb);
   transition: all 0.3s;
   min-width: 400px;
 
   &:hover {
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 20px 25px -5px var(--workout-card-shadow-hover);
     transform: translateY(-0.25rem);
   }
 
   &.active {
     animation: pulse-orange 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.5);
+    box-shadow: 0 0 0 4px var(--workout-card-shadow-active);
 
     &:hover {
       transform: none;
@@ -68,13 +110,13 @@
 .weight {
   font-size: 6rem;
   font-weight: bold;
-  color: white;
+  color: var(--workout-card-text-primary);
   line-height: 1;
 }
 
 .weightUnit {
   font-size: 1.875rem;
-  color: white;
+  color: var(--workout-card-text-secondary);
 }
 
 .rightSection {
@@ -90,13 +132,13 @@
 
   .label {
     font-size: 0.875rem;
-    color: white;
+    color: var(--workout-card-text-secondary);
   }
 
   .value {
     font-size: 1.25rem;
     font-weight: 600;
-    color: white;
+    color: var(--workout-card-text-primary);
   }
 }
 
@@ -121,21 +163,21 @@
   .plateWeight {
     font-size: 0.875rem;
     font-weight: 500;
-    color: white;
+    color: var(--workout-card-text-primary);
     white-space: nowrap;
     min-width: 3rem;
   }
 
   .plateCount {
     font-size: 0.75rem;
-    color: #d1d5db;
+    color: var(--workout-card-text-tertiary);
     white-space: nowrap;
   }
 }
 
 .barOnly {
   font-size: 0.875rem;
-  color: white;
+  color: var(--workout-card-text-secondary);
 }
 
 .progressDots {
@@ -161,7 +203,7 @@
   }
 
   &.incomplete {
-    color: #d1d5db;
+    color: var(--workout-card-text-tertiary);
 
     &:hover {
       transform: scale(1.1);
