@@ -1,0 +1,186 @@
+@keyframes pulse-orange {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(251, 146, 60, 0);
+  }
+  50% {
+    box-shadow: 0 0 20px 10px rgba(251, 146, 60, 0.3);
+  }
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #f3f4f6;
+  background: linear-gradient(to bottom right, #ffffff, #f9fafb);
+  transition: all 0.3s;
+  min-width: 600px;
+
+  &:hover {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    transform: translateY(-0.25rem);
+  }
+
+  &.active {
+    animation: pulse-orange 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.5);
+
+    &:hover {
+      transform: none;
+    }
+  }
+}
+
+.mainContent {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+.leftSection {
+  flex: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.personName {
+  font-size: 1.125rem;
+  font-weight: bold;
+  background: linear-gradient(to right, #4f46e5, #9333ea);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.weightDisplay {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.weight {
+  font-size: 6rem;
+  font-weight: bold;
+  color: white;
+  line-height: 1;
+}
+
+.weightUnit {
+  font-size: 1.875rem;
+  color: white;
+}
+
+.rightSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.barWeight {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+
+  .label {
+    font-size: 0.875rem;
+    color: white;
+  }
+
+  .value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: white;
+  }
+}
+
+.plates {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.plateItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.plateInfo {
+  display: flex;
+  flex-direction: column;
+
+  .plateWeight {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+  }
+
+  .plateCount {
+    font-size: 0.75rem;
+    color: #d1d5db;
+  }
+}
+
+.barOnly {
+  font-size: 0.875rem;
+  color: white;
+}
+
+.progressDots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.dot {
+  font-size: 1.875rem;
+  background: none;
+  border: none;
+  padding: 0;
+  transition: transform 0.2s;
+  cursor: pointer;
+
+  &.completed {
+    color: #10b981;
+    cursor: default;
+  }
+
+  &.incomplete {
+    color: #d1d5db;
+
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+}
+
+// Dark mode support
+@media (prefers-color-scheme: dark) {
+  .card {
+    background: linear-gradient(to bottom right, #1f2937, #111827);
+    border-color: #374151;
+  }
+
+  .barWeight {
+    border-bottom-color: #374151;
+  }
+
+  .progressDots {
+    border-top-color: #374151;
+  }
+
+  .personName {
+    background: linear-gradient(to right, #818cf8, #c084fc);
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}

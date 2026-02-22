@@ -2,6 +2,21 @@
 
 @tailwind utilities;
 
+:root {
+  /* Base scale factor - adjust this to fine-tune overall sizing */
+  --viewport-scale: 1;
+
+  /* Can be used for calc() in custom utilities if needed */
+  --vmin-base: 1vmin;
+}
+
+/* Optional: Different scaling for very large displays */
+@media (min-width: 2560px) {
+  :root {
+    --viewport-scale: 0.9; /* Slightly smaller on 4K+ displays */
+  }
+}
+
 @layer utilities {
   .overflow-auto > *,
   .overflow-scroll > *,
