@@ -18,7 +18,7 @@
   border: 1px solid #f3f4f6;
   background: linear-gradient(to bottom right, #ffffff, #f9fafb);
   transition: all 0.3s;
-  min-width: 600px;
+  min-width: 400px;
 
   &:hover {
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
@@ -38,7 +38,8 @@
 .mainContent {
   display: flex;
   gap: 2rem;
-  margin-bottom: 1.5rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .leftSection {
@@ -61,7 +62,7 @@
   display: flex;
   align-items: baseline;
   gap: 0.75rem;
-  margin-top: 1rem;
+  margin: auto;
 }
 
 .weight {
