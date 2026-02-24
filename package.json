@@ -8,7 +8,8 @@
     "dev": "vite",
     "start": "npm run build:react && npm run build:electron && electron .",
     "build:react": "tsx ./build.mts",
-    "build:electron": "tsc --project tsconfig.electron.json && chmod 755 dist/*",
+    "build:electron": "tsc --project tsconfig.electron.json && npm run copy:schema && chmod 755 dist/*",
+    "copy:schema": "mkdir -p dist/db && cp src/db/schema.sql dist/db/schema.sql",
     "prettier": "prettier --write \"**/*.{ts,tsx,md}\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
@@ -17,10 +18,12 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "better-sqlite3": "^11.9.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
     "@chromatic-com/storybook": "^5.0.1",
     "@storybook/addon-a11y": "^10.2.10",
     "@storybook/addon-docs": "^10.2.10",

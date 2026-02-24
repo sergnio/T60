@@ -1,0 +1,123 @@
+/**
+ * Database types matching the SQLite schema
+ */
+
+export type WeightUnit = "lbs" | "kg";
+
+/**
+ * Person/Athlete in the system
+ */
+export interface Person {
+  id: string;
+  name: string;
+  created_at: number;
+  updated_at: number;
+}
+
+/**
+ * Group workout session
+ */
+export interface WorkoutSession {
+  id: string;
+  name: string | null;
+  started_at: number;
+  ended_at: number | null;
+  is_active: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+/**
+ * Link between a person and their exercise in a session
+ */
+export interface SessionParticipant {
+  id: string;
+  session_id: string;
+  person_id: string;
+  exercise_name: string;
+  weight_unit: WeightUnit;
+  current_set_index: number;
+  is_active: boolean;
+  created_at: number;
+  updated_at: number;
+}
+
+/**
+ * Individual set for an exercise
+ */
+export interface Set {
+  id: string;
+  participant_id: string;
+  set_index: number;
+  weight: number;
+  completed: boolean;
+  completed_at: number | null;
+  created_at: number;
+  updated_at: number;
+}
+
+/**
+ * Input types for creating records (without generated fields)
+ */
+
+export interface CreatePersonInput {
+  name: string;
+}
+
+export interface CreateWorkoutSessionInput {
+  name?: string;
+}
+
+export interface CreateSessionParticipantInput {
+  session_id: string;
+  person_id: string;
+  exercise_name: string;
+  weight_unit: WeightUnit;
+}
+
+export interface CreateSetInput {
+  participant_id: string;
+  set_index: number;
+  weight: number;
+}
+
+/**
+ * Update types for modifying records
+ */
+
+export interface UpdatePersonInput {
+  name?: string;
+}
+
+export interface UpdateWorkoutSessionInput {
+  name?: string;
+  ended_at?: number | null;
+  is_active?: boolean;
+}
+
+export interface UpdateSessionParticipantInput {
+  current_set_index?: number;
+  is_active?: boolean;
+}
+
+export interface UpdateSetInput {
+  completed?: boolean;
+  completed_at?: number | null;
+}
+
+/**
+ * Joined data types for queries
+ */
+
+export interface ParticipantWithPerson extends SessionParticipant {
+  person: Person;
+}
+
+export interface ParticipantWithSets extends SessionParticipant {
+  person: Person;
+  sets: Set[];
+}
+
+export interface SessionWithParticipants extends WorkoutSession {
+  participants: ParticipantWithSets[];
+}

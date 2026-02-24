@@ -3,14 +3,14 @@
     "target": "esnext",
     "module": "nodenext",
     "moduleResolution": "nodenext",
-    "outDir": "./dist/electron-app",
-    "rootDir": "./src/electron-app",
+    "outDir": "./dist",
+    "rootDir": "./src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": false
   },
-  "include": ["src/electron-app"],
+  "include": ["src/electron-app", "src/db"],
   "exclude": ["node_modules"]
 }
