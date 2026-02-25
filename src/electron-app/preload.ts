@@ -1,20 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type {
-  Person,
-  WorkoutSession,
-  SessionParticipant,
-  Set,
   CreatePersonInput,
-  CreateWorkoutSessionInput,
   CreateSessionParticipantInput,
   CreateSetInput,
+  CreateWorkoutSessionInput,
   UpdatePersonInput,
-  UpdateWorkoutSessionInput,
   UpdateSessionParticipantInput,
   UpdateSetInput,
-  ParticipantWithSets,
-  SessionWithParticipants,
-} from "../db/types";
+  UpdateWorkoutSessionInput,
+} from "../db/types.js";
 
 /**
  * Database API exposed to the renderer process
@@ -23,14 +17,11 @@ const databaseAPI = {
   // People
   createPerson: (input: CreatePersonInput) =>
     ipcRenderer.invoke("db:createPerson", input),
-  getPerson: (id: string) =>
-    ipcRenderer.invoke("db:getPerson", id),
-  getAllPeople: () =>
-    ipcRenderer.invoke("db:getAllPeople"),
+  getPerson: (id: string) => ipcRenderer.invoke("db:getPerson", id),
+  getAllPeople: () => ipcRenderer.invoke("db:getAllPeople"),
   updatePerson: (id: string, input: UpdatePersonInput) =>
     ipcRenderer.invoke("db:updatePerson", id, input),
-  deletePerson: (id: string) =>
-    ipcRenderer.invoke("db:deletePerson", id),
+  deletePerson: (id: string) => ipcRenderer.invoke("db:deletePerson", id),
 
   // Workout Sessions
   createWorkoutSession: (input: CreateWorkoutSessionInput) =>
@@ -39,8 +30,7 @@ const databaseAPI = {
     ipcRenderer.invoke("db:getWorkoutSession", id),
   getActiveWorkoutSession: () =>
     ipcRenderer.invoke("db:getActiveWorkoutSession"),
-  getAllWorkoutSessions: () =>
-    ipcRenderer.invoke("db:getAllWorkoutSessions"),
+  getAllWorkoutSessions: () => ipcRenderer.invoke("db:getAllWorkoutSessions"),
   updateWorkoutSession: (id: string, input: UpdateWorkoutSessionInput) =>
     ipcRenderer.invoke("db:updateWorkoutSession", id, input),
   endWorkoutSession: (id: string) =>
@@ -57,24 +47,23 @@ const databaseAPI = {
     ipcRenderer.invoke("db:getSessionParticipants", sessionId),
   getActiveSessionParticipants: (sessionId: string) =>
     ipcRenderer.invoke("db:getActiveSessionParticipants", sessionId),
-  updateSessionParticipant: (id: string, input: UpdateSessionParticipantInput) =>
-    ipcRenderer.invoke("db:updateSessionParticipant", id, input),
+  updateSessionParticipant: (
+    id: string,
+    input: UpdateSessionParticipantInput,
+  ) => ipcRenderer.invoke("db:updateSessionParticipant", id, input),
   deleteSessionParticipant: (id: string) =>
     ipcRenderer.invoke("db:deleteSessionParticipant", id),
 
   // Sets
   createSet: (input: CreateSetInput) =>
     ipcRenderer.invoke("db:createSet", input),
-  getSet: (id: string) =>
-    ipcRenderer.invoke("db:getSet", id),
+  getSet: (id: string) => ipcRenderer.invoke("db:getSet", id),
   getSetsByParticipant: (participantId: string) =>
     ipcRenderer.invoke("db:getSetsByParticipant", participantId),
   updateSet: (id: string, input: UpdateSetInput) =>
     ipcRenderer.invoke("db:updateSet", id, input),
-  completeSet: (id: string) =>
-    ipcRenderer.invoke("db:completeSet", id),
-  deleteSet: (id: string) =>
-    ipcRenderer.invoke("db:deleteSet", id),
+  completeSet: (id: string) => ipcRenderer.invoke("db:completeSet", id),
+  deleteSet: (id: string) => ipcRenderer.invoke("db:deleteSet", id),
 
   // Joined Queries
   getParticipantWithSets: (participantId: string) =>
@@ -85,8 +74,7 @@ const databaseAPI = {
     ipcRenderer.invoke("db:getActiveSessionWithParticipants"),
 
   // Seed database for testing
-  seedDatabase: () =>
-    ipcRenderer.invoke("db:seedDatabase"),
+  seedDatabase: () => ipcRenderer.invoke("db:seedDatabase"),
 };
 
 // Expose the database API to the renderer process

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
-import { closeDatabase, initDatabase, seedDatabase } from "../db/init";
-import * as queries from "../db/queries";
+import { closeDatabase, initDatabase, seedDatabase } from "../db/init.js";
+import * as queries from "../db/queries.js";
 
 const createWindow = () => {
   const win = new BrowserWindow({

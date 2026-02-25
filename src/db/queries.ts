@@ -1,4 +1,4 @@
-import { getDatabase } from "./init";
+import { getDatabase } from "./init.js";
 import type {
   Person,
   WorkoutSession,
@@ -14,7 +14,7 @@ import type {
   UpdateSetInput,
   ParticipantWithSets,
   SessionWithParticipants,
-} from "./types";
+} from "./types.js";
 
 // ============================================================================
 // PEOPLE
@@ -25,38 +25,53 @@ export function createPerson(input: CreatePersonInput): Person {
   const id = crypto.randomUUID();
   const now = Date.now();
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO people (id, name, created_at, updated_at)
     VALUES (?, ?, ?, ?)
-  `).run(id, input.name, now, now);
+  `,
+  ).run(id, input.name, now, now);
 
   return getPerson(id)!;
 }
 
 export function getPerson(id: string): Person | null {
   const db = getDatabase();
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT * FROM people WHERE id = ?
-  `).get(id) as Person | undefined;
+  `,
+    )
+    .get(id) as Person | undefined;
 
   return row || null;
 }
 
 export function getAllPeople(): Person[] {
   const db = getDatabase();
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT * FROM people ORDER BY name
-  `).all() as Person[];
+  `,
+    )
+    .all() as Person[];
 }
 
-export function updatePerson(id: string, input: UpdatePersonInput): Person | null {
+export function updatePerson(
+  id: string,
+  input: UpdatePersonInput,
+): Person | null {
   const db = getDatabase();
   const now = Date.now();
 
   if (input.name !== undefined) {
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE people SET name = ?, updated_at = ? WHERE id = ?
-    `).run(input.name, now, id);
+    `,
+    ).run(input.name, now, id);
   }
 
   return getPerson(id);
@@ -64,9 +79,13 @@ export function updatePerson(id: string, input: UpdatePersonInput): Person | nul
 
 export function deletePerson(id: string): boolean {
   const db = getDatabase();
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     DELETE FROM people WHERE id = ?
-  `).run(id);
+  `,
+    )
+    .run(id);
 
   return result.changes > 0;
 }
@@ -75,45 +94,61 @@ export function deletePerson(id: string): boolean {
 // WORKOUT SESSIONS
 // ============================================================================
 
-export function createWorkoutSession(input: CreateWorkoutSessionInput): WorkoutSession {
+export function createWorkoutSession(
+  input: CreateWorkoutSessionInput,
+): WorkoutSession {
   const db = getDatabase();
   const id = crypto.randomUUID();
   const now = Date.now();
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO workout_sessions (id, name, started_at, is_active, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(id, input.name || null, now, 1, now, now);
+  `,
+  ).run(id, input.name || null, now, 1, now, now);
 
   return getWorkoutSession(id)!;
 }
 
 export function getWorkoutSession(id: string): WorkoutSession | null {
   const db = getDatabase();
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT * FROM workout_sessions WHERE id = ?
-  `).get(id) as WorkoutSession | undefined;
+  `,
+    )
+    .get(id) as WorkoutSession | undefined;
 
   return row || null;
 }
 
 export function getActiveWorkoutSession(): WorkoutSession | null {
   const db = getDatabase();
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT * FROM workout_sessions
     WHERE is_active = 1
     ORDER BY started_at DESC
     LIMIT 1
-  `).get() as WorkoutSession | undefined;
+  `,
+    )
+    .get() as WorkoutSession | undefined;
 
   return row || null;
 }
 
 export function getAllWorkoutSessions(): WorkoutSession[] {
   const db = getDatabase();
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT * FROM workout_sessions ORDER BY started_at DESC
-  `).all() as WorkoutSession[];
+  `,
+    )
+    .all() as WorkoutSession[];
 }
 
 export function updateWorkoutSession(
@@ -144,9 +179,11 @@ export function updateWorkoutSession(
     values.push(now);
     values.push(id);
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE workout_sessions SET ${updates.join(", ")} WHERE id = ?
-    `).run(...values);
+    `,
+    ).run(...values);
   }
 
   return getWorkoutSession(id);
@@ -161,9 +198,13 @@ export function endWorkoutSession(id: string): WorkoutSession | null {
 
 export function deleteWorkoutSession(id: string): boolean {
   const db = getDatabase();
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     DELETE FROM workout_sessions WHERE id = ?
-  `).run(id);
+  `,
+    )
+    .run(id);
 
   return result.changes > 0;
 }
@@ -179,11 +220,13 @@ export function createSessionParticipant(
   const id = crypto.randomUUID();
   const now = Date.now();
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO session_participants
     (id, session_id, person_id, exercise_name, weight_unit, current_set_index, is_active, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `).run(
+  `,
+  ).run(
     id,
     input.session_id,
     input.person_id,
@@ -200,26 +243,42 @@ export function createSessionParticipant(
 
 export function getSessionParticipant(id: string): SessionParticipant | null {
   const db = getDatabase();
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT * FROM session_participants WHERE id = ?
-  `).get(id) as SessionParticipant | undefined;
+  `,
+    )
+    .get(id) as SessionParticipant | undefined;
 
   return row || null;
 }
 
-export function getSessionParticipants(sessionId: string): SessionParticipant[] {
+export function getSessionParticipants(
+  sessionId: string,
+): SessionParticipant[] {
   const db = getDatabase();
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT * FROM session_participants WHERE session_id = ?
-  `).all(sessionId) as SessionParticipant[];
+  `,
+    )
+    .all(sessionId) as SessionParticipant[];
 }
 
-export function getActiveSessionParticipants(sessionId: string): SessionParticipant[] {
+export function getActiveSessionParticipants(
+  sessionId: string,
+): SessionParticipant[] {
   const db = getDatabase();
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT * FROM session_participants
     WHERE session_id = ? AND is_active = 1
-  `).all(sessionId) as SessionParticipant[];
+  `,
+    )
+    .all(sessionId) as SessionParticipant[];
 }
 
 export function updateSessionParticipant(
@@ -246,9 +305,11 @@ export function updateSessionParticipant(
     values.push(now);
     values.push(id);
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE session_participants SET ${updates.join(", ")} WHERE id = ?
-    `).run(...values);
+    `,
+    ).run(...values);
   }
 
   return getSessionParticipant(id);
@@ -256,9 +317,13 @@ export function updateSessionParticipant(
 
 export function deleteSessionParticipant(id: string): boolean {
   const db = getDatabase();
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     DELETE FROM session_participants WHERE id = ?
-  `).run(id);
+  `,
+    )
+    .run(id);
 
   return result.changes > 0;
 }
@@ -272,36 +337,38 @@ export function createSet(input: CreateSetInput): Set {
   const id = crypto.randomUUID();
   const now = Date.now();
 
-  db.prepare(`
+  db.prepare(
+    `
     INSERT INTO sets (id, participant_id, set_index, weight, completed, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(
-    id,
-    input.participant_id,
-    input.set_index,
-    input.weight,
-    0,
-    now,
-    now,
-  );
+  `,
+  ).run(id, input.participant_id, input.set_index, input.weight, 0, now, now);
 
   return getSet(id)!;
 }
 
 export function getSet(id: string): Set | null {
   const db = getDatabase();
-  const row = db.prepare(`
+  const row = db
+    .prepare(
+      `
     SELECT * FROM sets WHERE id = ?
-  `).get(id) as Set | undefined;
+  `,
+    )
+    .get(id) as Set | undefined;
 
   return row || null;
 }
 
 export function getSetsByParticipant(participantId: string): Set[] {
   const db = getDatabase();
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT * FROM sets WHERE participant_id = ? ORDER BY set_index
-  `).all(participantId) as Set[];
+  `,
+    )
+    .all(participantId) as Set[];
 }
 
 export function updateSet(id: string, input: UpdateSetInput): Set | null {
@@ -325,9 +392,11 @@ export function updateSet(id: string, input: UpdateSetInput): Set | null {
     values.push(now);
     values.push(id);
 
-    db.prepare(`
+    db.prepare(
+      `
       UPDATE sets SET ${updates.join(", ")} WHERE id = ?
-    `).run(...values);
+    `,
+    ).run(...values);
   }
 
   return getSet(id);
@@ -342,9 +411,13 @@ export function completeSet(id: string): Set | null {
 
 export function deleteSet(id: string): boolean {
   const db = getDatabase();
-  const result = db.prepare(`
+  const result = db
+    .prepare(
+      `
     DELETE FROM sets WHERE id = ?
-  `).run(id);
+  `,
+    )
+    .run(id);
 
   return result.changes > 0;
 }
@@ -353,7 +426,9 @@ export function deleteSet(id: string): boolean {
 // JOINED QUERIES
 // ============================================================================
 
-export function getParticipantWithSets(participantId: string): ParticipantWithSets | null {
+export function getParticipantWithSets(
+  participantId: string,
+): ParticipantWithSets | null {
   const participant = getSessionParticipant(participantId);
   if (!participant) return null;
 
@@ -369,7 +444,9 @@ export function getParticipantWithSets(participantId: string): ParticipantWithSe
   };
 }
 
-export function getSessionWithParticipants(sessionId: string): SessionWithParticipants | null {
+export function getSessionWithParticipants(
+  sessionId: string,
+): SessionWithParticipants | null {
   const session = getWorkoutSession(sessionId);
   if (!session) return null;
 
