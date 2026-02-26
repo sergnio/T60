@@ -54,9 +54,7 @@ export function initDatabase(): Database.Database {
  */
 export function getDatabase(): Database.Database {
   if (!db) {
-    throw new Error(
-      "Database not initialized. Call initDatabase() first.",
-    );
+    throw new Error("Database not initialized. Call initDatabase() first.");
   }
   return db;
 }
@@ -103,10 +101,14 @@ export function seedDatabase(): void {
 
   // Create a workout session
   const sessionId = crypto.randomUUID();
-  database.prepare(`
+  database
+    .prepare(
+      `
     INSERT INTO workout_sessions (id, name, started_at, is_active, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?)
-  `).run(sessionId, "Today's Workout", now, 1, now, now);
+  `,
+    )
+    .run(sessionId, "Today's Workout", now, 1, now, now);
 
   // Create session participants
   const participants = [

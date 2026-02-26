@@ -1,7 +1,11 @@
 import { app, BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
 import { closeDatabase, initDatabase, seedDatabase } from "../db/init.js";
-import * as queries from "../db/queries.js";
+import * as personService from "../services/personService.js";
+import * as workoutSessionService from "../services/workoutSessionService.js";
+import * as sessionParticipantService from "../services/sessionParticipantService.js";
+import * as setService from "../services/setService.js";
+import * as workflowService from "../services/workflowService.js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -21,81 +25,85 @@ const createWindow = () => {
   win.loadFile("dist/index.html");
 };
 
-// Register IPC handlers for database operations
-const registerDatabaseHandlers = () => {
+// Register IPC handlers for service layer operations
+const registerServiceHandlers = () => {
   // People
-  ipcMain.handle("db:createPerson", (_, input) => queries.createPerson(input));
-  ipcMain.handle("db:getPerson", (_, id) => queries.getPerson(id));
-  ipcMain.handle("db:getAllPeople", () => queries.getAllPeople());
-  ipcMain.handle("db:updatePerson", (_, id, input) =>
-    queries.updatePerson(id, input),
+  ipcMain.handle("db:createPerson", (_, input) =>
+    personService.createPerson(input),
   );
-  ipcMain.handle("db:deletePerson", (_, id) => queries.deletePerson(id));
+  ipcMain.handle("db:getPerson", (_, id) => personService.getPerson(id));
+  ipcMain.handle("db:getAllPeople", () => personService.getAllPeople());
+  ipcMain.handle("db:updatePerson", (_, id, input) =>
+    personService.updatePerson(id, input),
+  );
+  ipcMain.handle("db:deletePerson", (_, id) =>
+    personService.deletePerson(id),
+  );
 
   // Workout Sessions
   ipcMain.handle("db:createWorkoutSession", (_, input) =>
-    queries.createWorkoutSession(input),
+    workoutSessionService.createWorkoutSession(input),
   );
   ipcMain.handle("db:getWorkoutSession", (_, id) =>
-    queries.getWorkoutSession(id),
+    workoutSessionService.getWorkoutSession(id),
   );
   ipcMain.handle("db:getActiveWorkoutSession", () =>
-    queries.getActiveWorkoutSession(),
+    workoutSessionService.getActiveWorkoutSession(),
   );
   ipcMain.handle("db:getAllWorkoutSessions", () =>
-    queries.getAllWorkoutSessions(),
+    workoutSessionService.getAllWorkoutSessions(),
   );
   ipcMain.handle("db:updateWorkoutSession", (_, id, input) =>
-    queries.updateWorkoutSession(id, input),
+    workoutSessionService.updateWorkoutSession(id, input),
   );
   ipcMain.handle("db:endWorkoutSession", (_, id) =>
-    queries.endWorkoutSession(id),
+    workoutSessionService.endWorkoutSession(id),
   );
   ipcMain.handle("db:deleteWorkoutSession", (_, id) =>
-    queries.deleteWorkoutSession(id),
+    workoutSessionService.deleteWorkoutSession(id),
   );
 
   // Session Participants
   ipcMain.handle("db:createSessionParticipant", (_, input) =>
-    queries.createSessionParticipant(input),
+    sessionParticipantService.createSessionParticipant(input),
   );
   ipcMain.handle("db:getSessionParticipant", (_, id) =>
-    queries.getSessionParticipant(id),
+    sessionParticipantService.getSessionParticipant(id),
   );
   ipcMain.handle("db:getSessionParticipants", (_, sessionId) =>
-    queries.getSessionParticipants(sessionId),
+    sessionParticipantService.getSessionParticipants(sessionId),
   );
   ipcMain.handle("db:getActiveSessionParticipants", (_, sessionId) =>
-    queries.getActiveSessionParticipants(sessionId),
+    sessionParticipantService.getActiveSessionParticipants(sessionId),
   );
   ipcMain.handle("db:updateSessionParticipant", (_, id, input) =>
-    queries.updateSessionParticipant(id, input),
+    sessionParticipantService.updateSessionParticipant(id, input),
   );
   ipcMain.handle("db:deleteSessionParticipant", (_, id) =>
-    queries.deleteSessionParticipant(id),
+    sessionParticipantService.deleteSessionParticipant(id),
   );
 
   // Sets
-  ipcMain.handle("db:createSet", (_, input) => queries.createSet(input));
-  ipcMain.handle("db:getSet", (_, id) => queries.getSet(id));
+  ipcMain.handle("db:createSet", (_, input) => setService.createSet(input));
+  ipcMain.handle("db:getSet", (_, id) => setService.getSet(id));
   ipcMain.handle("db:getSetsByParticipant", (_, participantId) =>
-    queries.getSetsByParticipant(participantId),
+    setService.getSetsByParticipant(participantId),
   );
   ipcMain.handle("db:updateSet", (_, id, input) =>
-    queries.updateSet(id, input),
+    setService.updateSet(id, input),
   );
-  ipcMain.handle("db:completeSet", (_, id) => queries.completeSet(id));
-  ipcMain.handle("db:deleteSet", (_, id) => queries.deleteSet(id));
+  ipcMain.handle("db:completeSet", (_, id) => setService.completeSet(id));
+  ipcMain.handle("db:deleteSet", (_, id) => setService.deleteSet(id));
 
-  // Joined Queries
+  // Workflow (joined queries)
   ipcMain.handle("db:getParticipantWithSets", (_, participantId) =>
-    queries.getParticipantWithSets(participantId),
+    workflowService.getParticipantWithSets(participantId),
   );
   ipcMain.handle("db:getSessionWithParticipants", (_, sessionId) =>
-    queries.getSessionWithParticipants(sessionId),
+    workflowService.getSessionWithParticipants(sessionId),
   );
   ipcMain.handle("db:getActiveSessionWithParticipants", () =>
-    queries.getActiveSessionWithParticipants(),
+    workflowService.getActiveSessionWithParticipants(),
   );
 
   // Seed database
@@ -107,7 +115,7 @@ app.whenReady().then(() => {
   initDatabase();
 
   // Register IPC handlers
-  registerDatabaseHandlers();
+  registerServiceHandlers();
 
   createWindow();
 
