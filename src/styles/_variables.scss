@@ -1,0 +1,108 @@
+// ============================================
+// Color Palette
+// ============================================
+
+// Gray scale (from Tailwind gray-50 to gray-950)
+$gray-50: #f9fafb;
+$gray-100: #f3f4f6;
+$gray-200: #e5e7eb;
+$gray-300: #d1d5db;
+$gray-400: #9ca3af;
+$gray-500: #6b7280;
+$gray-600: #4b5563;
+$gray-700: #374151;
+$gray-800: #1f2937;
+$gray-900: #111827;
+$gray-950: #030712;
+
+// Primary colors
+$indigo-400: #818cf8;
+$indigo-600: #4f46e5;
+$purple-400: #c084fc;
+$purple-600: #9333ea;
+$orange-400: #fb923c;
+$orange-500: #f97316;
+$blue-600: #2563eb;
+$blue-700: #1d4ed8;
+
+// Status colors
+$green-50: #f0fdf4;
+$green-200: #bbf7d0;
+$green-400: #4ade80;
+$green-500: #10b981;
+$green-800: #166534;
+$green-900: #14532d;
+
+$emerald-50: #ecfdf5;
+$emerald-900: #064e3b;
+
+$red-400: #f87171;
+$red-600: #dc2626;
+
+$amber-400: #fbbf24;
+
+// ============================================
+// Responsive Breakpoints
+// ============================================
+$breakpoint-sm: 640px;
+$breakpoint-md: 768px;
+$breakpoint-lg: 1024px;
+$breakpoint-xl: 1280px;
+$breakpoint-2xl: 1536px;
+$breakpoint-4k: 2560px;
+
+// ============================================
+// Fluid Typography (using clamp)
+// ============================================
+$text-fluid-xs: clamp(0.75rem, 1.5vmin, 3rem);
+$text-fluid-sm: clamp(0.875rem, 1.75vmin, 3.5rem);
+$text-fluid-base: clamp(1rem, 2vmin, 4rem);
+$text-fluid-lg: clamp(1.125rem, 2.25vmin, 4.5rem);
+$text-fluid-xl: clamp(1.25rem, 2.5vmin, 5rem);
+$text-fluid-2xl: clamp(1.5rem, 3vmin, 6rem);
+$text-fluid-3xl: clamp(1.875rem, 3.75vmin, 7.5rem);
+$text-fluid-4xl: clamp(2.25rem, 4.5vmin, 9rem);
+$text-fluid-5xl: clamp(3rem, 6vmin, 12rem);
+
+// ============================================
+// Fluid Spacing
+// ============================================
+$spacing-fluid-1: clamp(0.25rem, 0.5vmin, 1rem);
+$spacing-fluid-2: clamp(0.5rem, 1vmin, 2rem);
+$spacing-fluid-3: clamp(0.75rem, 1.5vmin, 3rem);
+$spacing-fluid-4: clamp(1rem, 2vmin, 4rem);
+$spacing-fluid-6: clamp(1.5rem, 3vmin, 6rem);
+$spacing-fluid-8: clamp(2rem, 4vmin, 8rem);
+
+// ============================================
+// Fluid Border Radius
+// ============================================
+$radius-fluid-lg: clamp(0.5rem, 1vmin, 2rem);
+$radius-fluid-xl: clamp(0.75rem, 1.5vmin, 3rem);
+$radius-fluid-2xl: clamp(1rem, 2vmin, 4rem);
+
+// ============================================
+// Standard Sizes (non-fluid)
+// ============================================
+$spacing-1: 0.25rem;
+$spacing-2: 0.5rem;
+$spacing-3: 0.75rem;
+$spacing-4: 1rem;
+$spacing-6: 1.5rem;
+$spacing-8: 2rem;
+$spacing-10: 2.5rem;
+
+$font-size-xs: 0.75rem;
+$font-size-sm: 0.875rem;
+$font-size-base: 1rem;
+$font-size-lg: 1.125rem;
+$font-size-xl: 1.25rem;
+$font-size-2xl: 1.5rem;
+$font-size-3xl: 1.875rem;
+$font-size-4xl: 2.25rem;
+$font-size-5xl: 3rem;
+$font-size-6xl: 6rem;
+
+$radius-lg: 0.5rem;
+$radius-xl: 0.75rem;
+$radius-2xl: 1rem;

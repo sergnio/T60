@@ -1,0 +1,125 @@
+@use 'variables' as *;
+
+// ============================================
+// Layout Mixins
+// ============================================
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-col {
+  display: flex;
+  flex-direction: column;
+}
+
+// ============================================
+// Gradient Text
+// ============================================
+
+@mixin gradient-text($from, $to) {
+  background: linear-gradient(to right, $from, $to);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+// ============================================
+// Shadows
+// ============================================
+
+@mixin shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -4px rgba(0, 0, 0, 0.1);
+}
+
+@mixin shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+// ============================================
+// Focus Ring
+// ============================================
+
+@mixin ring($color, $width: 2px, $offset: 2px) {
+  box-shadow: 0 0 0 $offset transparent, 0 0 0 calc(#{$offset} + #{$width}) $color;
+}
+
+// ============================================
+// Transitions
+// ============================================
+
+@mixin transition-all {
+  transition: all 0.3s ease-in-out;
+}
+
+// ============================================
+// Hover Effects
+// ============================================
+
+@mixin hover-lift {
+  &:hover {
+    transform: translateY(-0.25rem);
+  }
+}
+
+// ============================================
+// Responsive Breakpoints
+// ============================================
+
+@mixin sm {
+  @media (min-width: $breakpoint-sm) {
+    @content;
+  }
+}
+
+@mixin md {
+  @media (min-width: $breakpoint-md) {
+    @content;
+  }
+}
+
+@mixin lg {
+  @media (min-width: $breakpoint-lg) {
+    @content;
+  }
+}
+
+@mixin xl {
+  @media (min-width: $breakpoint-xl) {
+    @content;
+  }
+}
+
+@mixin xxl {
+  @media (min-width: $breakpoint-2xl) {
+    @content;
+  }
+}
+
+@mixin fourk {
+  @media (min-width: $breakpoint-4k) {
+    @content;
+  }
+}
+
+// ============================================
+// Pulse Animation
+// ============================================
+
+@mixin pulse-animation($color, $name: 'pulse') {
+  @keyframes #{$name} {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba($color, 0);
+    }
+    50% {
+      box-shadow: 0 0 20px 10px rgba($color, 0.3);
+    }
+  }
+
+  animation: #{$name} 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

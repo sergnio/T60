@@ -3,6 +3,7 @@ import { WorkoutCardT18 } from "./stories/WorkoutCardT18";
 import { useActiveSessionWithParticipants } from "./hooks/queries/useWorkflowQueries.ts";
 import { useCompleteSet } from "./hooks/mutations/useSetMutations.ts";
 import type { ParticipantWithSets } from "./db/types.ts";
+import styles from "./App.module.scss";
 
 /**
  * Map database participant data to Exercise format for WorkoutCard
@@ -41,8 +42,8 @@ const App = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="flex w-screen h-screen bg-gray-50 dark:bg-gray-900 items-center justify-center">
-        <div className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+      <div className={styles.fullscreenCenter}>
+        <div className={styles.loadingText}>
           Loading workout session...
         </div>
       </div>
@@ -52,8 +53,8 @@ const App = () => {
   // Error state
   if (error) {
     return (
-      <div className="flex w-screen h-screen bg-gray-50 dark:bg-gray-900 items-center justify-center">
-        <div className="text-2xl font-semibold text-red-600 dark:text-red-400">
+      <div className={styles.fullscreenCenter}>
+        <div className={styles.errorText}>
           Error loading session: {error.message}
         </div>
       </div>
@@ -63,13 +64,13 @@ const App = () => {
   // No active session
   if (!session) {
     return (
-      <div className="flex flex-col gap-4 w-screen h-screen bg-gray-50 dark:bg-gray-900 items-center justify-center">
-        <div className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+      <div className={styles.noSessionContainer}>
+        <div className={styles.loadingText}>
           No active workout session
         </div>
         <button
           onClick={() => window.database.seedDatabase()}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          className={styles.seedButton}
         >
           Seed Database
         </button>
@@ -86,21 +87,21 @@ const App = () => {
     .slice(0, 3);
 
   return (
-    <div className="flex flex-col gap-10 w-screen h-screen bg-gray-50 dark:bg-gray-900 p-10 items-center justify-center">
+    <div className={styles.container}>
       {/* Session name */}
       {session.name && (
-        <div className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+        <div className={styles.sessionTitle}>
           {session.name}
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 w-full max-w-[90vw]">
+      <div className={styles.grid}>
         {/* Active participants - Top row */}
         {activeParticipants.map((participant) => {
           const exercise = mapParticipantToExercise(participant);
           return (
-            <div key={participant.id} className="flex flex-col gap-3">
-              <div className="text-xl font-semibold text-gray-800 dark:text-gray-200 text-center">
+            <div key={participant.id} className={styles.exerciseWrapper}>
+              <div className={styles.exerciseTitle}>
                 {exercise.name}
               </div>
               <WorkoutCardT18

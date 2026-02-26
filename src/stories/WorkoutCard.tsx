@@ -40,6 +40,8 @@ export interface WorkoutCardProps {
   onSetComplete?: (setIndex: number) => void;
 }
 
+import styles from "./WorkoutCard.module.scss";
+
 /**
  * A modern, visually appealing workout card component that displays
  * workout progress for a single person.
@@ -71,71 +73,50 @@ export const WorkoutCard = ({
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Dynamic card classes based on variant
-  const getCardClasses = () => {
-    const baseClasses =
-      "relative flex flex-col gap-4 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border";
-
-    const variantClasses = {
-      active:
-        "bg-gradient-to-br from-white to-gray-50 border-gray-100 hover:-translate-y-1 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700",
-      resting:
-        "bg-gradient-to-br from-white to-gray-50 border-gray-100 ring-2 ring-orange-400 ring-offset-2 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700 dark:ring-offset-gray-950",
-      completed:
-        "bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-800",
-    };
-
-    return `${baseClasses} ${variantClasses[variant]}`;
-  };
-
   return (
-    <div className={getCardClasses()}>
+    <div className={`${styles.card} ${styles[variant]}`}>
       {/* Header with name and rest timer */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">
+      <div className={styles.header}>
+        <h3 className={styles.personName}>
           {personName}
         </h3>
       </div>
 
       {/* Exercise info */}
-      <div className="flex gap-1">
-        <h4 className="text-5xl font-semibold text-gray-700 dark:text-gray-200">
+      <div className={styles.exerciseInfo}>
+        <h4 className={styles.weightDisplay}>
           {currentSet.weight}&nbsp;
-          <span className="text-2xl text-gray-500 dark:text-gray-400">
+          <span className={styles.weightUnit}>
             {exercise.weightUnit}
           </span>
         </h4>
       </div>
 
       {/* Progress indicator */}
-      <div className="flex flex-col gap-2">
-        <div className="inline-flex items-center gap-1.5 flex-wrap">
+      <div className={styles.progressContainer}>
+        <div className={styles.progressDots}>
           {exercise.sets.map((set, index) => (
             <button
               key={index}
               onClick={() => !set.completed && onSetComplete?.(index)}
               disabled={set.completed}
-              className={`text-2xl transition-transform duration-200 ${
-                set.completed
-                  ? "text-green-500 dark:text-green-400"
-                  : "text-gray-300 dark:text-gray-600 cursor-pointer hover:scale-110"
-              } ${set.completed ? "cursor-default" : ""}`}
+              className={`${styles.dot} ${set.completed ? styles.completed : styles.incomplete}`}
               aria-label={`Set ${index + 1}: ${set.weight} reps ${set.completed ? "completed" : "pending"}`}
             >
               {set.completed ? "●" : "○"}
             </button>
           ))}
         </div>
-        <div className="text-sm text-gray-600 dark:text-gray-400">
+        <div className={styles.progressText}>
           {completedSets} / {totalSets} sets completed
         </div>
       </div>
 
       {/* Next action badge */}
       {nextSet && !nextSet.completed && (
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 w-fit">
+        <div className={styles.nextActionBadge}>
           <svg
-            className="w-4 h-4 text-indigo-600 dark:text-indigo-400"
+            className={styles.badgeIcon}
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -147,7 +128,7 @@ export const WorkoutCard = ({
               d="M13 7l5 5m0 0l-5 5m5-5H6"
             />
           </svg>
-          <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
+          <span className={styles.badgeText}>
             Next: {nextSet.weight} lbs
           </span>
         </div>

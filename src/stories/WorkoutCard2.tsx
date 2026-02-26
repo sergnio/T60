@@ -64,6 +64,8 @@ export interface WorkoutCard2Props {
   showTotalWeight?: boolean;
 }
 
+import styles from "./WorkoutCard2.module.scss";
+
 /**
  * Dumbbell icon component
  */
@@ -119,19 +121,6 @@ export const WorkoutCard2 = ({
     }, 0);
   };
 
-  // Dynamic card classes based on variant
-  const getCardClasses = () => {
-    const baseClasses = "relative grid gap-4 p-6 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border min-w-[320px]";
-
-    const variantClasses = {
-      active: "bg-gradient-to-br from-white to-gray-50 border-gray-200 hover:-translate-y-0.5 dark:from-gray-800 dark:to-gray-900 dark:border-gray-700",
-      resting: "bg-gradient-to-br from-white to-gray-50 border-orange-400 border-2 dark:from-gray-800 dark:to-gray-900 dark:border-orange-500",
-      completed: "bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 dark:from-green-900/20 dark:to-emerald-900/20 dark:border-green-700"
-    };
-
-    return `${baseClasses} ${variantClasses[variant]}`;
-  };
-
   // Get central metric display value
   const getDisplayValue = () => {
     if (displayMetric.type === 'timer') {
@@ -140,30 +129,8 @@ export const WorkoutCard2 = ({
     return displayMetric.value.toString();
   };
 
-  // Get central metric styling
-  const getMetricClasses = () => {
-    const baseClasses = "text-5xl md:text-6xl lg:text-7xl font-extrabold";
-
-    if (displayMetric.type === 'timer') {
-      return `${baseClasses} bg-gradient-to-br from-amber-400 to-orange-500 bg-clip-text text-transparent`;
-    }
-
-    return `${baseClasses} text-gray-900 dark:text-white`;
-  };
-
-  // Get label color classes
-  const getLabelClasses = () => {
-    const colorClasses = {
-      amber: "text-amber-600 dark:text-amber-400",
-      indigo: "text-indigo-600 dark:text-indigo-400",
-      green: "text-green-600 dark:text-green-400"
-    };
-
-    const color = displayMetric.color || 'indigo';
-    return `text-sm font-medium uppercase tracking-wide ${colorClasses[color]}`;
-  };
-
   const totalWeight = calculateTotalWeight(exercise);
+  const color = displayMetric.color || 'indigo';
 
   return (
     <div className={getCardClasses()}>
