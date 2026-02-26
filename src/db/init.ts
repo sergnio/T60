@@ -2,6 +2,11 @@ import Database from "better-sqlite3";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { app } from "electron";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 let db: Database.Database | null = null;
 

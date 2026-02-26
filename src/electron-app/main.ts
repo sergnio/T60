@@ -2,6 +2,11 @@ import { app, BrowserWindow, ipcMain } from "electron";
 import { join } from "path";
 import { closeDatabase, initDatabase, seedDatabase } from "../db/init.js";
 import * as queries from "../db/queries.js";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const createWindow = () => {
   const win = new BrowserWindow({
