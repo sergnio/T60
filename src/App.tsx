@@ -1,144 +1,138 @@
 import type { Exercise } from "./stories/WorkoutCardT18";
 import { WorkoutCardT18 } from "./stories/WorkoutCardT18";
+import { useActiveSessionWithParticipants } from "./hooks/queries/useWorkflowQueries.ts";
+import { useCompleteSet } from "./hooks/mutations/useSetMutations.ts";
+import type { ParticipantWithSets } from "./db/types.ts";
 
-// Sample workout data
-const tonyBench: Exercise = {
-  name: "Bench Press",
-  weightUnit: "lbs",
-  sets: [
-    { weight: 170, completed: true },
-    { weight: 250, completed: true },
-    { weight: 210, completed: false },
-    { weight: 230, completed: false },
-    { weight: 250, completed: false },
-  ],
-  currentSetIndex: 1,
-};
-// Sample workout data
-const sergioBench: Exercise = {
-  name: "Bench Press",
-  weightUnit: "lbs",
-  sets: [
-    { weight: 170, completed: true },
-    { weight: 95, completed: true },
-    { weight: 210, completed: false },
-    { weight: 230, completed: false },
-    { weight: 250, completed: false },
-  ],
-  currentSetIndex: 1,
-};
+/**
+ * Map database participant data to Exercise format for WorkoutCard
+ */
+function mapParticipantToExercise(
+  participant: ParticipantWithSets,
+): Exercise {
+  return {
+    name: participant.exercise_name,
+    weightUnit: participant.weight_unit,
+    sets: participant.sets
+      .sort((a, b) => a.set_index - b.set_index)
+      .map((set) => ({
+        weight: set.weight,
+        completed: set.completed,
+      })),
+    currentSetIndex: participant.current_set_index,
+  };
+}
 
-const steveDeadlift: Exercise = {
-  name: "Deadlift",
-  weightUnit: "lbs",
-  sets: [
-    { weight: 265, completed: true },
-    { weight: 155, completed: true },
-    { weight: 305, completed: false },
-    { weight: 305, completed: false },
-    { weight: 325, completed: false },
-  ],
-  currentSetIndex: 1,
-};
+const App = () => {
+  const { data: session, isLoading, error } = useActiveSessionWithParticipants();
+  const completeSetMutation = useCompleteSet();
 
-const noahDeadlift: Exercise = {
-  name: "Deadlift",
-  weightUnit: "lbs",
-  sets: [
-    { weight: 265, completed: true },
-    { weight: 210, completed: true },
-    { weight: 305, completed: false },
-    { weight: 325, completed: false },
-    { weight: 325, completed: false },
-  ],
-  currentSetIndex: 1,
-};
+  // Handle set completion
+  const handleSetComplete = (participantId: string, setIndex: number) => {
+    const participant = session?.participants.find((p) => p.id === participantId);
+    if (!participant) return;
 
-const maviSquat: Exercise = {
-  name: "Back Squat",
-  weightUnit: "lbs",
-  sets: [
-    { weight: 185, completed: true },
-    { weight: 245, completed: true },
-    { weight: 315, completed: false },
-    { weight: 365, completed: false },
-    { weight: 365, completed: false },
-  ],
-  currentSetIndex: 1,
-};
+    const set = participant.sets.find((s) => s.set_index === setIndex);
+    if (set && !set.completed) {
+      completeSetMutation.mutate(set.id);
+    }
+  };
 
-const kakesSquat: Exercise = {
-  name: "Back Squat",
-  weightUnit: "lbs",
-  sets: [
-    { weight: 185, completed: true },
-    { weight: 300, completed: true },
-    { weight: 315, completed: false },
-    { weight: 365, completed: false },
-    { weight: 365, completed: false },
-  ],
-  currentSetIndex: 1,
-};
-
-const App = () => (
-  <div className="flex flex-col gap-10 w-screen h-screen bg-gray-50 dark:bg-gray-900 p-10 items-center justify-center">
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 w-full max-w-[90vw]">
-      {/* Active Users - Top 3 */}
-      <div className="flex flex-col gap-3">
-        <div className="text-xl font-semibold text-gray-800 dark:text-gray-200 text-center">
-          {tonyBench.name}
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="flex w-screen h-screen bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <div className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+          Loading workout session...
         </div>
-        <WorkoutCardT18
-          personName="TONY"
-          exercise={tonyBench}
-          isActive
-          onSetComplete={(index) => console.log(`Set ${index} completed`)}
-        />
       </div>
-      <div className="flex flex-col gap-3">
-        <div className="text-xl font-semibold text-gray-800 dark:text-gray-200 text-center">
-          {steveDeadlift.name}
-        </div>
-        <WorkoutCardT18
-          personName="STEVE"
-          exercise={steveDeadlift}
-          isActive
-          onSetComplete={(index) => console.log(`Set ${index} completed`)}
-        />
-      </div>
-      <div className="flex flex-col gap-3">
-        <div className="text-xl font-semibold text-gray-800 dark:text-gray-200 text-center">
-          {maviSquat.name}
-        </div>
-        <WorkoutCardT18
-          personName="VICTORIA"
-          exercise={maviSquat}
-          isActive
-          onSetComplete={(index) => console.log(`Set ${index} completed`)}
-        />
-      </div>
+    );
+  }
 
-      {/* Resting Users - Bottom 3 */}
-      <WorkoutCardT18
-        personName="SERGIO"
-        exercise={sergioBench}
-        isActive={false}
-        onSetComplete={(index) => console.log(`Set ${index} completed`)}
-      />
-      <WorkoutCardT18
-        personName="NOAH"
-        exercise={noahDeadlift}
-        isActive={false}
-        onSetComplete={(index) => console.log(`Set ${index} completed`)}
-      />
-      <WorkoutCardT18
-        personName="KAKES"
-        exercise={kakesSquat}
-        isActive={false}
-        onSetComplete={(index) => console.log(`Set ${index} completed`)}
-      />
+  // Error state
+  if (error) {
+    return (
+      <div className="flex w-screen h-screen bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <div className="text-2xl font-semibold text-red-600 dark:text-red-400">
+          Error loading session: {error.message}
+        </div>
+      </div>
+    );
+  }
+
+  // No active session
+  if (!session) {
+    return (
+      <div className="flex flex-col gap-4 w-screen h-screen bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <div className="text-2xl font-semibold text-gray-800 dark:text-gray-200">
+          No active workout session
+        </div>
+        <button
+          onClick={() => window.database.seedDatabase()}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          Seed Database
+        </button>
+      </div>
+    );
+  }
+
+  // Split participants into active and resting
+  const activeParticipants = session.participants
+    .filter((p) => p.is_active)
+    .slice(0, 3);
+  const restingParticipants = session.participants
+    .filter((p) => !p.is_active)
+    .slice(0, 3);
+
+  return (
+    <div className="flex flex-col gap-10 w-screen h-screen bg-gray-50 dark:bg-gray-900 p-10 items-center justify-center">
+      {/* Session name */}
+      {session.name && (
+        <div className="text-3xl font-bold text-gray-800 dark:text-gray-200">
+          {session.name}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 w-full max-w-[90vw]">
+        {/* Active participants - Top row */}
+        {activeParticipants.map((participant) => {
+          const exercise = mapParticipantToExercise(participant);
+          return (
+            <div key={participant.id} className="flex flex-col gap-3">
+              <div className="text-xl font-semibold text-gray-800 dark:text-gray-200 text-center">
+                {exercise.name}
+              </div>
+              <WorkoutCardT18
+                personName={participant.person.name.toUpperCase()}
+                exercise={exercise}
+                isActive
+                onSetComplete={(setIndex) =>
+                  handleSetComplete(participant.id, setIndex)
+                }
+              />
+            </div>
+          );
+        })}
+
+        {/* Resting participants - Bottom row */}
+        {restingParticipants.map((participant) => {
+          const exercise = mapParticipantToExercise(participant);
+          return (
+            <WorkoutCardT18
+              key={participant.id}
+              personName={participant.person.name.toUpperCase()}
+              exercise={exercise}
+              isActive={false}
+              onSetComplete={(setIndex) =>
+                handleSetComplete(participant.id, setIndex)
+              }
+            />
+          );
+        })}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default App;
