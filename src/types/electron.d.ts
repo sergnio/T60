@@ -2,6 +2,7 @@
  * Type declarations for Electron IPC API exposed to renderer process
  */
 import type {
+  CreateExerciseInput,
   CreatePersonInput,
   CreateSessionParticipantInput,
   CreateSetInput,
@@ -10,6 +11,7 @@ import type {
   UpdateSessionParticipantInput,
   UpdateSetInput,
   UpdateWorkoutSessionInput,
+  Exercise,
   Person,
   WorkoutSession,
   SessionParticipant,
@@ -22,6 +24,10 @@ import type { ServiceResult } from "../services/types/serviceResults";
 declare global {
   interface Window {
     database: {
+      // Exercises
+      createExercise: (input: CreateExerciseInput) => Promise<ServiceResult<Exercise>>;
+      getAllExercises: () => Promise<ServiceResult<Exercise[]>>;
+
       // People
       createPerson: (input: CreatePersonInput) => Promise<ServiceResult<Person>>;
       getPerson: (id: string) => Promise<ServiceResult<Person | null>>;

@@ -6,6 +6,7 @@ import * as workoutSessionService from "../services/workoutSessionService.js";
 import * as sessionParticipantService from "../services/sessionParticipantService.js";
 import * as setService from "../services/setService.js";
 import * as workflowService from "../services/workflowService.js";
+import * as exerciseService from "../services/exerciseService.js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -27,6 +28,14 @@ const createWindow = () => {
 
 // Register IPC handlers for service layer operations
 const registerServiceHandlers = () => {
+  // Exercises
+  ipcMain.handle("db:createExercise", (_, input) =>
+    exerciseService.createExercise(input),
+  );
+  ipcMain.handle("db:getAllExercises", () =>
+    exerciseService.getAllExercises(),
+  );
+
   // People
   ipcMain.handle("db:createPerson", (_, input) =>
     personService.createPerson(input),

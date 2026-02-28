@@ -1,6 +1,8 @@
 import { getDatabase } from "./init.js";
 import type {
   Person,
+  Exercise,
+  CreateExerciseInput,
   WorkoutSession,
   SessionParticipant,
   Set,
@@ -15,6 +17,49 @@ import type {
   ParticipantWithSets,
   SessionWithParticipants,
 } from "./types.js";
+
+// ============================================================================
+// EXERCISES
+// ============================================================================
+
+export function createExercise(input: CreateExerciseInput): Exercise {
+  const db = getDatabase();
+  const id = crypto.randomUUID();
+  const now = Date.now();
+
+  db.prepare(
+    `
+    INSERT INTO exercises (id, name, created_at, updated_at)
+    VALUES (?, ?, ?, ?)
+  `,
+  ).run(id, input.name, now, now);
+
+  return getExercise(id)!;
+}
+
+export function getExercise(id: string): Exercise | null {
+  const db = getDatabase();
+  const row = db
+    .prepare(
+      `
+    SELECT * FROM exercises WHERE id = ?
+  `,
+    )
+    .get(id) as Exercise | undefined;
+
+  return row || null;
+}
+
+export function getAllExercises(): Exercise[] {
+  const db = getDatabase();
+  return db
+    .prepare(
+      `
+    SELECT * FROM exercises ORDER BY name
+  `,
+    )
+    .all() as Exercise[];
+}
 
 // ============================================================================
 // PEOPLE
@@ -112,25 +157,32 @@ export function createWorkoutSession(
     `,
     ).run(sessionId, input.name || null, now, now, now);
 
-    // Create participants for each person
-    for (const personId of input.participantIds) {
-      const participant = createSessionParticipant({
-        session_id: sessionId,
-        person_id: personId,
-        exercise_name: input.exerciseName,
-        weight_unit: input.weightUnit,
-      });
+    // Create participants for each station
+    for (const station of input.stations) {
+      const exercise = getExercise(station.exerciseId);
+      if (!exercise) {
+        throw new Error(`Exercise not found: ${station.exerciseId}`);
+      }
 
-      // Create 5 sets for each participant (hardcoded for Phase 1)
-      // First set: 10 reps, remaining sets: 5 reps
-      for (let setIndex = 0; setIndex < 5; setIndex++) {
-        createSet({
-          participant_id: participant.id,
-          set_index: setIndex,
-          weight: 0, // Default weight, will be updated during workout
-          // todo - if there's no ticket for this, create one. once there is a ticket delete this todo
-          reps: setIndex === 0 ? 10 : 5, // First set = 10 reps, rest = 5
+      for (const personId of station.participantIds) {
+        const participant = createSessionParticipant({
+          session_id: sessionId,
+          person_id: personId,
+          exercise_name: exercise.name,
+          exercise_id: exercise.id,
+          weight_unit: input.weightUnit,
         });
+
+        // Create 5 sets for each participant
+        // First set: 10 reps, remaining sets: 5 reps
+        for (let setIndex = 0; setIndex < 5; setIndex++) {
+          createSet({
+            participant_id: participant.id,
+            set_index: setIndex,
+            weight: 0,
+            reps: setIndex === 0 ? 10 : 5,
+          });
+        }
       }
     }
 
@@ -252,14 +304,15 @@ export function createSessionParticipant(
   db.prepare(
     `
     INSERT INTO session_participants
-    (id, session_id, person_id, exercise_name, weight_unit, current_set_index, is_active, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, session_id, person_id, exercise_name, exercise_id, weight_unit, current_set_index, is_active, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     id,
     input.session_id,
     input.person_id,
     input.exercise_name,
+    input.exercise_id || null,
     input.weight_unit,
     0,
     0,

@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type {
+  CreateExerciseInput,
   CreatePersonInput,
   CreateSessionParticipantInput,
   CreateSetInput,
@@ -14,6 +15,11 @@ import type {
  * Database API exposed to the renderer process
  */
 const databaseAPI = {
+  // Exercises
+  createExercise: (input: CreateExerciseInput) =>
+    ipcRenderer.invoke("db:createExercise", input),
+  getAllExercises: () => ipcRenderer.invoke("db:getAllExercises"),
+
   // People
   createPerson: (input: CreatePersonInput) =>
     ipcRenderer.invoke("db:createPerson", input),
