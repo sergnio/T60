@@ -9,10 +9,13 @@ import type { Exercise, CreateExerciseInput } from "../db/types.js";
 export async function createExercise(
   input: CreateExerciseInput,
 ): Promise<ServiceResult<Exercise>> {
+  console.log("[exerciseService:createExercise] Creating exercise:", input.name);
   try {
     const exercise = queries.createExercise(input);
+    console.log("[exerciseService:createExercise] Created exercise:", exercise.id);
     return { success: true, data: exercise };
   } catch (error) {
+    console.error("[exerciseService:createExercise] Failed:", error);
     return {
       success: false,
       error: {
@@ -25,10 +28,13 @@ export async function createExercise(
 }
 
 export async function getAllExercises(): Promise<ServiceResult<Exercise[]>> {
+  console.log("[exerciseService:getAllExercises] Fetching all exercises");
   try {
     const exercises = queries.getAllExercises();
+    console.log("[exerciseService:getAllExercises] Found", exercises.length, "exercises");
     return { success: true, data: exercises };
   } catch (error) {
+    console.error("[exerciseService:getAllExercises] Failed:", error);
     return {
       success: false,
       error: {
@@ -43,10 +49,13 @@ export async function getAllExercises(): Promise<ServiceResult<Exercise[]>> {
 export async function getExercise(
   id: string,
 ): Promise<ServiceResult<Exercise | null>> {
+  console.log("[exerciseService:getExercise] Fetching exercise:", id);
   try {
     const exercise = queries.getExercise(id);
+    console.log("[exerciseService:getExercise] Result:", exercise ? "found" : "not found");
     return { success: true, data: exercise };
   } catch (error) {
+    console.error("[exerciseService:getExercise] Failed:", error);
     return {
       success: false,
       error: {
