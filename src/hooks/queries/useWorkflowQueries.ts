@@ -9,7 +9,8 @@ export function useActiveSessionWithParticipants() {
     queryKey: queryKeys.workoutSessions.activeWithParticipants,
     queryFn: async () => {
       const result = await window.database.getActiveSessionWithParticipants();
-      return result.success ? result.data : null;
+      if (!result.success) throw new Error(result.error.message);
+      return result.data;
     },
     refetchInterval: 5000, // Poll every 5s for live updates
   });
@@ -21,7 +22,8 @@ export function useSessionWithParticipants(sessionId: string) {
     queryFn: async () => {
       const result =
         await window.database.getSessionWithParticipants(sessionId);
-      return result.success ? result.data : null;
+      if (!result.success) throw new Error(result.error.message);
+      return result.data;
     },
     enabled: !!sessionId,
   });
@@ -33,7 +35,8 @@ export function useParticipantWithSets(participantId: string) {
     queryFn: async () => {
       const result =
         await window.database.getParticipantWithSets(participantId);
-      return result.success ? result.data : null;
+      if (!result.success) throw new Error(result.error.message);
+      return result.data;
     },
     enabled: !!participantId,
   });
