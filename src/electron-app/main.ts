@@ -100,10 +100,9 @@ const registerServiceHandlers = () => {
   ipcMain.handle("db:getSessionWithParticipants", (_, sessionId) =>
     workflowService.getSessionWithParticipants(sessionId),
   );
-  ipcMain.handle("db:getActiveSessionWithParticipants", () => {
-    console.log("about to hit the shit");
-    return workflowService.getActiveSessionWithParticipants();
-  });
+  ipcMain.handle("db:getActiveSessionWithParticipants", () =>
+    workflowService.getActiveSessionWithParticipants(),
+  );
 
   // Seed database
   ipcMain.handle("db:seedDatabase", () => seedDatabase());

@@ -29,8 +29,6 @@ const App = () => {
     isLoading,
     error,
   } = useActiveSessionWithParticipants();
-  console.log("session", session);
-  console.log("erro", error);
   const completeSetMutation = useCompleteSet();
 
   // Handle set completion

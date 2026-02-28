@@ -3,18 +3,13 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../queryKeys.ts";
-import type {
-  SessionWithParticipants,
-  ParticipantWithSets,
-} from "../../db/types.ts";
 
 export function useActiveSessionWithParticipants() {
   return useQuery({
     queryKey: queryKeys.workoutSessions.activeWithParticipants,
     queryFn: async () => {
       const result = await window.database.getActiveSessionWithParticipants();
-      console.log("GREAT SUCCESS", result);
-      return result as SessionWithParticipants | null;
+      return result.success ? result.data : null;
     },
     refetchInterval: 5000, // Poll every 5s for live updates
   });
@@ -26,7 +21,7 @@ export function useSessionWithParticipants(sessionId: string) {
     queryFn: async () => {
       const result =
         await window.database.getSessionWithParticipants(sessionId);
-      return result as SessionWithParticipants | null;
+      return result.success ? result.data : null;
     },
     enabled: !!sessionId,
   });
@@ -38,7 +33,7 @@ export function useParticipantWithSets(participantId: string) {
     queryFn: async () => {
       const result =
         await window.database.getParticipantWithSets(participantId);
-      return result as ParticipantWithSets | null;
+      return result.success ? result.data : null;
     },
     enabled: !!participantId,
   });
