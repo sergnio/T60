@@ -16,22 +16,22 @@ export async function createWorkoutSession(
 ): Promise<ServiceResult<SessionWithParticipants>> {
   try {
     // Validate input
-    if (!input.participantIds || input.participantIds.length === 0) {
+    if (!input.stations || input.stations.length === 0) {
       return {
         success: false,
         error: {
           code: ErrorCode.VALIDATION_ERROR,
-          message: "At least one participant is required",
+          message: "At least one station is required",
         },
       };
     }
 
-    if (!input.exerciseName || input.exerciseName.trim().length === 0) {
+    if (input.stations.some((s) => !s.participantIds || s.participantIds.length === 0)) {
       return {
         success: false,
         error: {
           code: ErrorCode.VALIDATION_ERROR,
-          message: "Exercise name is required",
+          message: "Each station must have at least one participant",
         },
       };
     }

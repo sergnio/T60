@@ -47,6 +47,9 @@ export function initDatabase(): Database.Database {
   // Ensure default people exist
   ensureDefaultPeople();
 
+  // Ensure default exercises exist
+  ensureDefaultExercises();
+
   console.log("Database initialized successfully");
   return db;
 }
@@ -78,6 +81,32 @@ function ensureDefaultPeople(): void {
   `);
 
   for (const name of defaultPeople) {
+    stmt.run(crypto.randomUUID(), name, now, now, name);
+  }
+}
+
+/**
+ * Ensure default exercises exist in the database
+ */
+function ensureDefaultExercises(): void {
+  const database = getDatabase();
+  const now = Date.now();
+  const defaultExercises = [
+    "Bench Press",
+    "Pull-ups",
+    "Squats",
+    "Deadlifts",
+    "Rows",
+    "Shoulder Press",
+  ];
+
+  const stmt = database.prepare(`
+    INSERT OR IGNORE INTO exercises (id, name, created_at, updated_at)
+    SELECT ?, ?, ?, ?
+    WHERE NOT EXISTS (SELECT 1 FROM exercises WHERE name = ?)
+  `);
+
+  for (const name of defaultExercises) {
     stmt.run(crypto.randomUUID(), name, now, now, name);
   }
 }
@@ -217,8 +246,8 @@ export function seedDatabase(): void {
 
   const insertParticipant = database.prepare(`
     INSERT INTO session_participants
-    (id, session_id, person_id, exercise_name, weight_unit, current_set_index, is_active, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, session_id, person_id, exercise_name, exercise_id, weight_unit, current_set_index, is_active, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   const insertSet = database.prepare(`
@@ -235,6 +264,8 @@ export function seedDatabase(): void {
       sessionId,
       participant.person_id,
       participant.exercise_name,
+      // todo - seed data definitely should link to exercies table - we need to create a strategy to do so
+      null, // exercise_id - seed data doesn't link to exercises table
       participant.weight_unit,
       1, // current_set_index
       isActive,

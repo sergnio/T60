@@ -2,6 +2,7 @@
  * Type declarations for Electron IPC API exposed to renderer process
  */
 import type {
+  CreateExerciseInput,
   CreatePersonInput,
   CreateSessionParticipantInput,
   CreateSetInput,
@@ -10,6 +11,7 @@ import type {
   UpdateSessionParticipantInput,
   UpdateSetInput,
   UpdateWorkoutSessionInput,
+  Exercise,
   Person,
   WorkoutSession,
   SessionParticipant,
@@ -17,67 +19,72 @@ import type {
   ParticipantWithSets,
   SessionWithParticipants,
 } from "../db/types";
+import type { ServiceResult } from "../services/types/serviceResults";
 
 declare global {
   interface Window {
     database: {
+      // Exercises
+      createExercise: (input: CreateExerciseInput) => Promise<ServiceResult<Exercise>>;
+      getAllExercises: () => Promise<ServiceResult<Exercise[]>>;
+
       // People
-      createPerson: (input: CreatePersonInput) => Promise<Person>;
-      getPerson: (id: string) => Promise<Person | null>;
-      getAllPeople: () => Promise<Person[]>;
+      createPerson: (input: CreatePersonInput) => Promise<ServiceResult<Person>>;
+      getPerson: (id: string) => Promise<ServiceResult<Person | null>>;
+      getAllPeople: () => Promise<ServiceResult<Person[]>>;
       updatePerson: (
         id: string,
         input: UpdatePersonInput,
-      ) => Promise<Person | null>;
-      deletePerson: (id: string) => Promise<boolean>;
+      ) => Promise<ServiceResult<Person | null>>;
+      deletePerson: (id: string) => Promise<ServiceResult<boolean>>;
 
       // Workout Sessions
       createWorkoutSession: (
         input: CreateWorkoutSessionInput,
-      ) => Promise<WorkoutSession>;
-      getWorkoutSession: (id: string) => Promise<WorkoutSession | null>;
-      getActiveWorkoutSession: () => Promise<WorkoutSession | null>;
-      getAllWorkoutSessions: () => Promise<WorkoutSession[]>;
+      ) => Promise<ServiceResult<WorkoutSession>>;
+      getWorkoutSession: (id: string) => Promise<ServiceResult<WorkoutSession | null>>;
+      getActiveWorkoutSession: () => Promise<ServiceResult<WorkoutSession | null>>;
+      getAllWorkoutSessions: () => Promise<ServiceResult<WorkoutSession[]>>;
       updateWorkoutSession: (
         id: string,
         input: UpdateWorkoutSessionInput,
-      ) => Promise<WorkoutSession | null>;
-      endWorkoutSession: (id: string) => Promise<WorkoutSession | null>;
-      deleteWorkoutSession: (id: string) => Promise<boolean>;
+      ) => Promise<ServiceResult<WorkoutSession | null>>;
+      endWorkoutSession: (id: string) => Promise<ServiceResult<WorkoutSession | null>>;
+      deleteWorkoutSession: (id: string) => Promise<ServiceResult<boolean>>;
 
       // Session Participants
       createSessionParticipant: (
         input: CreateSessionParticipantInput,
-      ) => Promise<SessionParticipant>;
-      getSessionParticipant: (id: string) => Promise<SessionParticipant | null>;
+      ) => Promise<ServiceResult<SessionParticipant>>;
+      getSessionParticipant: (id: string) => Promise<ServiceResult<SessionParticipant | null>>;
       getSessionParticipants: (
         sessionId: string,
-      ) => Promise<SessionParticipant[]>;
+      ) => Promise<ServiceResult<SessionParticipant[]>>;
       getActiveSessionParticipants: (
         sessionId: string,
-      ) => Promise<SessionParticipant[]>;
+      ) => Promise<ServiceResult<SessionParticipant[]>>;
       updateSessionParticipant: (
         id: string,
         input: UpdateSessionParticipantInput,
-      ) => Promise<SessionParticipant | null>;
-      deleteSessionParticipant: (id: string) => Promise<boolean>;
+      ) => Promise<ServiceResult<SessionParticipant | null>>;
+      deleteSessionParticipant: (id: string) => Promise<ServiceResult<boolean>>;
 
       // Sets
-      createSet: (input: CreateSetInput) => Promise<Set>;
-      getSet: (id: string) => Promise<Set | null>;
-      getSetsByParticipant: (participantId: string) => Promise<Set[]>;
-      updateSet: (id: string, input: UpdateSetInput) => Promise<Set | null>;
-      completeSet: (id: string) => Promise<Set | null>;
-      deleteSet: (id: string) => Promise<boolean>;
+      createSet: (input: CreateSetInput) => Promise<ServiceResult<Set>>;
+      getSet: (id: string) => Promise<ServiceResult<Set | null>>;
+      getSetsByParticipant: (participantId: string) => Promise<ServiceResult<Set[]>>;
+      updateSet: (id: string, input: UpdateSetInput) => Promise<ServiceResult<Set | null>>;
+      completeSet: (id: string) => Promise<ServiceResult<Set | null>>;
+      deleteSet: (id: string) => Promise<ServiceResult<boolean>>;
 
       // Joined Queries
       getParticipantWithSets: (
         participantId: string,
-      ) => Promise<ParticipantWithSets | null>;
+      ) => Promise<ServiceResult<ParticipantWithSets | null>>;
       getSessionWithParticipants: (
         sessionId: string,
-      ) => Promise<SessionWithParticipants | null>;
-      getActiveSessionWithParticipants: () => Promise<SessionWithParticipants | null>;
+      ) => Promise<ServiceResult<SessionWithParticipants | null>>;
+      getActiveSessionWithParticipants: () => Promise<ServiceResult<SessionWithParticipants | null>>;
 
       // Seed database for testing
       seedDatabase: () => Promise<void>;

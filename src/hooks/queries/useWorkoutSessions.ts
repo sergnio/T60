@@ -3,14 +3,13 @@
  */
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../queryKeys.ts";
-import type { WorkoutSession } from "../../db/types.ts";
 
 export function useAllWorkoutSessions() {
   return useQuery({
     queryKey: queryKeys.workoutSessions.all,
     queryFn: async () => {
       const result = await window.database.getAllWorkoutSessions();
-      return result as WorkoutSession[];
+      return result.success ? result.data : [];
     },
   });
 }
@@ -20,7 +19,7 @@ export function useWorkoutSession(id: string) {
     queryKey: queryKeys.workoutSessions.detail(id),
     queryFn: async () => {
       const result = await window.database.getWorkoutSession(id);
-      return result as WorkoutSession | null;
+      return result.success ? result.data : null;
     },
     enabled: !!id,
   });
@@ -31,7 +30,7 @@ export function useActiveWorkoutSession() {
     queryKey: queryKeys.workoutSessions.active,
     queryFn: async () => {
       const result = await window.database.getActiveWorkoutSession();
-      return result as WorkoutSession | null;
+      return result.success ? result.data : null;
     },
   });
 }

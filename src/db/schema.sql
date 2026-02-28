@@ -1,6 +1,14 @@
 -- TONY Workout Tracker Database Schema
 -- SQLite database schema for local storage with cloud sync capability
 
+-- Exercises
+CREATE TABLE IF NOT EXISTS exercises (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
 -- People/Athletes
 CREATE TABLE IF NOT EXISTS people (
   id TEXT PRIMARY KEY,                    -- UUID
@@ -30,6 +38,7 @@ CREATE TABLE IF NOT EXISTS session_participants (
   session_id TEXT NOT NULL,
   person_id TEXT NOT NULL,
   exercise_name TEXT NOT NULL,            -- e.g., "Bench Press", "Deadlift"
+  exercise_id TEXT,                       -- FK to exercises table
   weight_unit TEXT NOT NULL               -- "lbs" or "kg"
     CHECK(weight_unit IN ('lbs', 'kg')),
   current_set_index INTEGER DEFAULT 0,    -- Which set they're currently on

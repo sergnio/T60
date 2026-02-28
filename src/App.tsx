@@ -23,14 +23,32 @@ function mapParticipantToExercise(participant: ParticipantWithSets): Exercise {
   };
 }
 
+/**
+ * Group participants by exercise_name into station columns
+ */
+function groupByExercise(
+  participants: ParticipantWithSets[],
+): { exerciseName: string; participants: ParticipantWithSets[] }[] {
+  const map = new Map<string, ParticipantWithSets[]>();
+  for (const p of participants) {
+    const key = p.exercise_name;
+    if (!map.has(key)) {
+      map.set(key, []);
+    }
+    map.get(key)!.push(p);
+  }
+  return Array.from(map.entries()).map(([exerciseName, participants]) => ({
+    exerciseName,
+    participants,
+  }));
+}
+
 const App = () => {
   const {
     data: session,
     isLoading,
     error,
   } = useActiveSessionWithParticipants();
-  console.log("session", session);
-  console.log("erro", error);
   const completeSetMutation = useCompleteSet();
 
   // Handle set completion
@@ -69,19 +87,13 @@ const App = () => {
   // No active session
   if (!session) {
     return (
-      <div className="flex w-screen h-screen bg-gray-50 dark:bg-gray-900 items-center justify-center">
+      <div className={styles.fullscreenCenter}>
         <SessionCreationForm />
       </div>
     );
   }
 
-  // Split participants into active and resting
-  const activeParticipants = session.participants
-    .filter((p) => p.is_active)
-    .slice(0, 3);
-  const restingParticipants = session.participants
-    .filter((p) => !p.is_active)
-    .slice(0, 3);
+  const stations = groupByExercise(session.participants);
 
   return (
     <div className={styles.container}>
@@ -90,40 +102,31 @@ const App = () => {
         <div className={styles.sessionTitle}>{session.name}</div>
       )}
 
-      <div className={styles.grid}>
-        {/* Active participants - Top row */}
-        {activeParticipants.map((participant) => {
-          const exercise = mapParticipantToExercise(participant);
-          return (
-            <div key={participant.id} className={styles.exerciseWrapper}>
-              <div className={styles.exerciseTitle}>{exercise.name}</div>
-              <WorkoutCardT18
-                personName={participant.person.name.toUpperCase()}
-                exercise={exercise}
-                isActive
-                onSetComplete={(setIndex) =>
-                  handleSetComplete(participant.id, setIndex)
-                }
-              />
-            </div>
-          );
-        })}
-
-        {/* Resting participants - Bottom row */}
-        {restingParticipants.map((participant) => {
-          const exercise = mapParticipantToExercise(participant);
-          return (
-            <WorkoutCardT18
-              key={participant.id}
-              personName={participant.person.name.toUpperCase()}
-              exercise={exercise}
-              isActive={false}
-              onSetComplete={(setIndex) =>
-                handleSetComplete(participant.id, setIndex)
-              }
-            />
-          );
-        })}
+      <div
+        className={styles.stationGrid}
+        style={{
+          gridTemplateColumns: `repeat(${stations.length}, 1fr)`,
+        }}
+      >
+        {stations.map((station) => (
+          <div key={station.exerciseName} className={styles.stationColumn}>
+            <div className={styles.exerciseTitle}>{station.exerciseName}</div>
+            {station.participants.map((participant) => {
+              const exercise = mapParticipantToExercise(participant);
+              return (
+                <WorkoutCardT18
+                  key={participant.id}
+                  personName={participant.person.name.toUpperCase()}
+                  exercise={exercise}
+                  isActive
+                  onSetComplete={(setIndex) =>
+                    handleSetComplete(participant.id, setIndex)
+                  }
+                />
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );

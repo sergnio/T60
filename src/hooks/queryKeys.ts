@@ -2,6 +2,10 @@
  * Centralized query key management for React Query
  */
 export const queryKeys = {
+  exercises: {
+    all: ["exercises"] as const,
+    detail: (id: string) => ["exercises", id] as const,
+  },
   people: {
     all: ["people"] as const,
     detail: (id: string) => ["people", id] as const,

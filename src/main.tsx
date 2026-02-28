@@ -3,6 +3,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import App from "./App.tsx";
 import { queryClient } from "./hooks/queryClient.ts";
+import "./index.css";
 import "./index.scss";
 
 // Same Id as what we set on the generated HTML

@@ -5,6 +5,20 @@
 export type WeightUnit = "lbs" | "kg";
 
 /**
+ * Exercise definition
+ */
+export interface Exercise {
+  id: string;
+  name: string;
+  created_at: number;
+  updated_at: number;
+}
+
+export interface CreateExerciseInput {
+  name: string;
+}
+
+/**
  * Person/Athlete in the system
  */
 export interface Person {
@@ -35,6 +49,7 @@ export interface SessionParticipant {
   session_id: string;
   person_id: string;
   exercise_name: string;
+  exercise_id: string | null;
   weight_unit: WeightUnit;
   current_set_index: number;
   is_active: boolean;
@@ -65,17 +80,22 @@ export interface CreatePersonInput {
   name: string;
 }
 
+export interface ExerciseStation {
+  exerciseId: string;
+  participantIds: string[]; // 1-2 people
+}
+
 export interface CreateWorkoutSessionInput {
   name?: string;
-  exerciseName: string;
   weightUnit: WeightUnit;
-  participantIds: string[];
+  stations: ExerciseStation[];
 }
 
 export interface CreateSessionParticipantInput {
   session_id: string;
   person_id: string;
   exercise_name: string;
+  exercise_id: string | null;
   weight_unit: WeightUnit;
 }
 
