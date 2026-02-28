@@ -264,6 +264,7 @@ export function seedDatabase(): void {
       sessionId,
       participant.person_id,
       participant.exercise_name,
+      // todo - seed data definitely should link to exercies table - we need to create a strategy to do so
       null, // exercise_id - seed data doesn't link to exercises table
       participant.weight_unit,
       1, // current_set_index
