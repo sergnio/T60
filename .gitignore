@@ -22,7 +22,7 @@ dist
 .DS_Store
 *.pem
 .vscode/settings.json
-tsconfig.*tsbuildinfo
+tsconfig*tsbuildinfo
 apps/online-check-in/public/version.json
 apps/online-check-in/public/utils
 
