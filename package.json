@@ -8,7 +8,7 @@
     "dev": "vite",
     "start": "npm run build:react && npm run build:electron && electron .",
     "build:react": "tsx ./build.mts",
-    "build:electron": "tsc -b tsconfig.electron.json tsconfig.preload.json && npm run copy:schema && chmod 755 dist/*",
+    "build:electron": "tsc --project tsconfig.electron.json && tsc --project tsconfig.preload.json && npm run copy:schema && chmod 755 dist/*",
     "copy:schema": "mkdir -p dist/db && cp src/db/schema.sql dist/db/schema.sql",
     "prettier": "prettier --write \"**/*.{ts,tsx,md}\"",
     "storybook": "storybook dev -p 6006",
