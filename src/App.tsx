@@ -3,14 +3,13 @@ import { WorkoutCardT18 } from "./stories/WorkoutCardT18";
 import { useActiveSessionWithParticipants } from "./hooks/queries/useWorkflowQueries.ts";
 import { useCompleteSet } from "./hooks/mutations/useSetMutations.ts";
 import type { ParticipantWithSets } from "./db/types.ts";
+import { SessionCreationForm } from "./components/SessionCreationForm.tsx";
 import styles from "./App.module.scss";
 
 /**
  * Map database participant data to Exercise format for WorkoutCard
  */
-function mapParticipantToExercise(
-  participant: ParticipantWithSets,
-): Exercise {
+function mapParticipantToExercise(participant: ParticipantWithSets): Exercise {
   return {
     name: participant.exercise_name,
     weightUnit: participant.weight_unit,
@@ -25,12 +24,20 @@ function mapParticipantToExercise(
 }
 
 const App = () => {
-  const { data: session, isLoading, error } = useActiveSessionWithParticipants();
+  const {
+    data: session,
+    isLoading,
+    error,
+  } = useActiveSessionWithParticipants();
+  console.log("session", session);
+  console.log("erro", error);
   const completeSetMutation = useCompleteSet();
 
   // Handle set completion
   const handleSetComplete = (participantId: string, setIndex: number) => {
-    const participant = session?.participants.find((p) => p.id === participantId);
+    const participant = session?.participants.find(
+      (p) => p.id === participantId,
+    );
     if (!participant) return;
 
     const set = participant.sets.find((s) => s.set_index === setIndex);
@@ -43,9 +50,7 @@ const App = () => {
   if (isLoading) {
     return (
       <div className={styles.fullscreenCenter}>
-        <div className={styles.loadingText}>
-          Loading workout session...
-        </div>
+        <div className={styles.loadingText}>Loading workout session...</div>
       </div>
     );
   }
@@ -64,16 +69,8 @@ const App = () => {
   // No active session
   if (!session) {
     return (
-      <div className={styles.noSessionContainer}>
-        <div className={styles.loadingText}>
-          No active workout session
-        </div>
-        <button
-          onClick={() => window.database.seedDatabase()}
-          className={styles.seedButton}
-        >
-          Seed Database
-        </button>
+      <div className="flex w-screen h-screen bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <SessionCreationForm />
       </div>
     );
   }
@@ -90,9 +87,7 @@ const App = () => {
     <div className={styles.container}>
       {/* Session name */}
       {session.name && (
-        <div className={styles.sessionTitle}>
-          {session.name}
-        </div>
+        <div className={styles.sessionTitle}>{session.name}</div>
       )}
 
       <div className={styles.grid}>
@@ -101,9 +96,7 @@ const App = () => {
           const exercise = mapParticipantToExercise(participant);
           return (
             <div key={participant.id} className={styles.exerciseWrapper}>
-              <div className={styles.exerciseTitle}>
-                {exercise.name}
-              </div>
+              <div className={styles.exerciseTitle}>{exercise.name}</div>
               <WorkoutCardT18
                 personName={participant.person.name.toUpperCase()}
                 exercise={exercise}

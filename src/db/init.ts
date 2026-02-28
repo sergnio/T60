@@ -44,6 +44,9 @@ export function initDatabase(): Database.Database {
   // Execute schema (split by statements)
   db.exec(schema);
 
+  // Ensure default people exist
+  ensureDefaultPeople();
+
   console.log("Database initialized successfully");
   return db;
 }
@@ -57,6 +60,26 @@ export function getDatabase(): Database.Database {
     throw new Error("Database not initialized. Call initDatabase() first.");
   }
   return db;
+}
+
+/**
+ * Ensure default people exist in the database
+ * Uses INSERT OR IGNORE to avoid duplicates
+ */
+function ensureDefaultPeople(): void {
+  const database = getDatabase();
+  const now = Date.now();
+  const defaultPeople = ["Tony", "Kakes", "Noah", "Sergio"];
+
+  const stmt = database.prepare(`
+    INSERT OR IGNORE INTO people (id, name, created_at, updated_at)
+    SELECT ?, ?, ?, ?
+    WHERE NOT EXISTS (SELECT 1 FROM people WHERE name = ?)
+  `);
+
+  for (const name of defaultPeople) {
+    stmt.run(crypto.randomUUID(), name, now, now, name);
+  }
 }
 
 /**
@@ -199,8 +222,8 @@ export function seedDatabase(): void {
   `);
 
   const insertSet = database.prepare(`
-    INSERT INTO sets (id, participant_id, set_index, weight, completed, completed_at, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sets (id, participant_id, set_index, weight, reps, completed, completed_at, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
 
   for (const participant of participants) {
@@ -226,6 +249,7 @@ export function seedDatabase(): void {
         participant.id,
         index,
         set.weight,
+        index === 0 ? 10 : 5, // First set: 10 reps, rest: 5 reps
         set.completed ? 1 : 0,
         set.completed ? now : null,
         now,

@@ -13,6 +13,7 @@ export function useActiveSessionWithParticipants() {
     queryKey: queryKeys.workoutSessions.activeWithParticipants,
     queryFn: async () => {
       const result = await window.database.getActiveSessionWithParticipants();
+      console.log("GREAT SUCCESS", result);
       return result as SessionWithParticipants | null;
     },
     refetchInterval: 5000, // Poll every 5s for live updates

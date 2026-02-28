@@ -96,19 +96,48 @@ export function deletePerson(id: string): boolean {
 
 export function createWorkoutSession(
   input: CreateWorkoutSessionInput,
-): WorkoutSession {
+): SessionWithParticipants {
+  console.log("[db:createWorkoutSession] input:", JSON.stringify(input));
   const db = getDatabase();
-  const id = crypto.randomUUID();
-  const now = Date.now();
 
-  db.prepare(
-    `
-    INSERT INTO workout_sessions (id, name, started_at, is_active, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `,
-  ).run(id, input.name || null, now, 1, now, now);
+  const run = db.transaction(() => {
+    const now = Date.now();
+    const sessionId = crypto.randomUUID();
 
-  return getWorkoutSession(id)!;
+    // Create session
+    db.prepare(
+      `
+      INSERT INTO workout_sessions (id, name, started_at, is_active, created_at, updated_at)
+      VALUES (?, ?, ?, TRUE, ?, ?)
+    `,
+    ).run(sessionId, input.name || null, now, now, now);
+
+    // Create participants for each person
+    for (const personId of input.participantIds) {
+      const participant = createSessionParticipant({
+        session_id: sessionId,
+        person_id: personId,
+        exercise_name: input.exerciseName,
+        weight_unit: input.weightUnit,
+      });
+
+      // Create 5 sets for each participant (hardcoded for Phase 1)
+      // First set: 10 reps, remaining sets: 5 reps
+      for (let setIndex = 0; setIndex < 5; setIndex++) {
+        createSet({
+          participant_id: participant.id,
+          set_index: setIndex,
+          weight: 0, // Default weight, will be updated during workout
+          // todo - if there's no ticket for this, create one. once there is a ticket delete this todo
+          reps: setIndex === 0 ? 10 : 5, // First set = 10 reps, rest = 5
+        });
+      }
+    }
+
+    return getSessionWithParticipants(sessionId)!;
+  });
+
+  return run();
 }
 
 export function getWorkoutSession(id: string): WorkoutSession | null {
@@ -339,10 +368,19 @@ export function createSet(input: CreateSetInput): Set {
 
   db.prepare(
     `
-    INSERT INTO sets (id, participant_id, set_index, weight, completed, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO sets (id, participant_id, set_index, weight, reps, completed, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
-  ).run(id, input.participant_id, input.set_index, input.weight, 0, now, now);
+  ).run(
+    id,
+    input.participant_id,
+    input.set_index,
+    input.weight,
+    input.reps,
+    0,
+    now,
+    now,
+  );
 
   return getSet(id)!;
 }
@@ -469,6 +507,7 @@ export function getSessionWithParticipants(
 
 export function getActiveSessionWithParticipants(): SessionWithParticipants | null {
   const session = getActiveWorkoutSession();
+  console.log("[getActiveSessionWithParticipants] session:", session);
   if (!session) return null;
 
   return getSessionWithParticipants(session.id);

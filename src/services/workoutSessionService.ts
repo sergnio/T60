@@ -8,12 +8,34 @@ import type {
   WorkoutSession,
   CreateWorkoutSessionInput,
   UpdateWorkoutSessionInput,
+  SessionWithParticipants,
 } from "../db/types.js";
 
 export async function createWorkoutSession(
   input: CreateWorkoutSessionInput,
-): Promise<ServiceResult<WorkoutSession>> {
+): Promise<ServiceResult<SessionWithParticipants>> {
   try {
+    // Validate input
+    if (!input.participantIds || input.participantIds.length === 0) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCode.VALIDATION_ERROR,
+          message: "At least one participant is required",
+        },
+      };
+    }
+
+    if (!input.exerciseName || input.exerciseName.trim().length === 0) {
+      return {
+        success: false,
+        error: {
+          code: ErrorCode.VALIDATION_ERROR,
+          message: "Exercise name is required",
+        },
+      };
+    }
+
     const session = queries.createWorkoutSession(input);
     return { success: true, data: session };
   } catch (error) {

@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS sets (
   participant_id TEXT NOT NULL,
   set_index INTEGER NOT NULL,             -- 0, 1, 2, etc.
   weight REAL NOT NULL,                   -- Weight for this set
+  reps INTEGER NOT NULL,                  -- Repetitions for this set
   completed BOOLEAN DEFAULT FALSE,
   completed_at INTEGER,                   -- When the set was completed
   created_at INTEGER NOT NULL,

@@ -7,6 +7,7 @@ import type {
   WorkoutSession,
   CreateWorkoutSessionInput,
   UpdateWorkoutSessionInput,
+  SessionWithParticipants,
 } from "../../db/types.ts";
 
 export function useCreateWorkoutSession() {
@@ -14,14 +15,18 @@ export function useCreateWorkoutSession() {
   return useMutation({
     mutationFn: async (input: CreateWorkoutSessionInput) => {
       const result = await window.database.createWorkoutSession(input);
-      return result as WorkoutSession;
+      return result as SessionWithParticipants;
     },
     onSuccess: () => {
+      // Invalidate all session queries to trigger refetch
       queryClient.invalidateQueries({
-        queryKey: queryKeys.workoutSessions.all,
+        queryKey: queryKeys.workoutSessions.activeWithParticipants,
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.workoutSessions.active,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workoutSessions.all,
       });
     },
   });

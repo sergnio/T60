@@ -49,6 +49,7 @@ export async function getActiveSessionWithParticipants(): Promise<
   ServiceResult<SessionWithParticipants | null>
 > {
   try {
+    console.log("Getting active session with participants");
     const session = queries.getActiveSessionWithParticipants();
     return { success: true, data: session };
   } catch (error) {

@@ -50,6 +50,7 @@ export interface Set {
   participant_id: string;
   set_index: number;
   weight: number;
+  reps: number;
   completed: boolean;
   completed_at: number | null;
   created_at: number;
@@ -66,6 +67,9 @@ export interface CreatePersonInput {
 
 export interface CreateWorkoutSessionInput {
   name?: string;
+  exerciseName: string;
+  weightUnit: WeightUnit;
+  participantIds: string[];
 }
 
 export interface CreateSessionParticipantInput {
@@ -79,6 +83,7 @@ export interface CreateSetInput {
   participant_id: string;
   set_index: number;
   weight: number;
+  reps: number;
 }
 
 /**

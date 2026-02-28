@@ -36,9 +36,7 @@ const registerServiceHandlers = () => {
   ipcMain.handle("db:updatePerson", (_, id, input) =>
     personService.updatePerson(id, input),
   );
-  ipcMain.handle("db:deletePerson", (_, id) =>
-    personService.deletePerson(id),
-  );
+  ipcMain.handle("db:deletePerson", (_, id) => personService.deletePerson(id));
 
   // Workout Sessions
   ipcMain.handle("db:createWorkoutSession", (_, input) =>
@@ -102,9 +100,10 @@ const registerServiceHandlers = () => {
   ipcMain.handle("db:getSessionWithParticipants", (_, sessionId) =>
     workflowService.getSessionWithParticipants(sessionId),
   );
-  ipcMain.handle("db:getActiveSessionWithParticipants", () =>
-    workflowService.getActiveSessionWithParticipants(),
-  );
+  ipcMain.handle("db:getActiveSessionWithParticipants", () => {
+    console.log("about to hit the shit");
+    return workflowService.getActiveSessionWithParticipants();
+  });
 
   // Seed database
   ipcMain.handle("db:seedDatabase", () => seedDatabase());
