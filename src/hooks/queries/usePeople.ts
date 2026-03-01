@@ -8,9 +8,9 @@ export function useAllPeople() {
   return useQuery({
     queryKey: queryKeys.people.all,
     queryFn: async () => {
-      console.log("getting ppl");
+      console.log("[hook:useAllPeople] Fetching all people");
       const result = await window.database.getAllPeople();
-      console.log("result", result);
+      console.log("[hook:useAllPeople] Result:", result.success ? `${result.data.length} people` : "failed");
       return result.success ? result.data : [];
     },
   });
