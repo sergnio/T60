@@ -178,14 +178,11 @@ export const WorkoutCardT18 = ({
       {/* Bottom - Set completion dots */}
       <div className={styles.progressDots}>
         {exercise.sets.map((set, index) => (
-          <button
+          <div
             key={index}
-            onClick={() => !set.completed && onSetComplete?.(index)}
-            disabled={set.completed}
             className={`${styles.dot} ${set.completed ? styles.completed : styles.incomplete}`}
             aria-label={`Set ${index + 1}: ${set.weight} ${exercise.weightUnit} ${set.completed ? "completed" : "pending"}`}
-          >
-          </button>
+          />
         ))}
       </div>
     </div>
