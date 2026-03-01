@@ -1,9 +1,8 @@
 import Database from "better-sqlite3";
 import { readFileSync } from "fs";
-import { join } from "path";
+import { dirname, join } from "path";
 import { app } from "electron";
 import { fileURLToPath } from "url";
-import { dirname } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -17,6 +16,23 @@ let db: Database.Database | null = null;
 export function getDatabasePath(): string {
   const userDataPath = app.getPath("userData");
   return join(userDataPath, "tony-workout.db");
+}
+
+/**
+ * Run migrations to handle schema changes on existing databases
+ */
+function runMigrations(database: Database.Database): void {
+  // Add exercise_id to session_participants if missing
+  const columns = database
+    .prepare("PRAGMA table_info(session_participants)")
+    .all() as { name: string }[];
+  const hasExerciseId = columns.some((col) => col.name === "exercise_id");
+  if (!hasExerciseId) {
+    console.log("Migration: adding exercise_id column to session_participants");
+    database.exec(
+      "ALTER TABLE session_participants ADD COLUMN exercise_id TEXT",
+    );
+  }
 }
 
 /**
@@ -43,6 +59,9 @@ export function initDatabase(): Database.Database {
 
   // Execute schema (split by statements)
   db.exec(schema);
+
+  // Run migrations for any schema changes on existing databases
+  runMigrations(db);
 
   // Ensure default people exist
   ensureDefaultPeople();
