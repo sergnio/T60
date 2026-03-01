@@ -185,7 +185,6 @@ export const WorkoutCardT18 = ({
             className={`${styles.dot} ${set.completed ? styles.completed : styles.incomplete}`}
             aria-label={`Set ${index + 1}: ${set.weight} ${exercise.weightUnit} ${set.completed ? "completed" : "pending"}`}
           >
-            {set.completed ? "●" : "○"}
           </button>
         ))}
       </div>
