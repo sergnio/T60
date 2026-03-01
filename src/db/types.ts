@@ -80,9 +80,15 @@ export interface CreatePersonInput {
   name: string;
 }
 
+export interface SetConfig {
+  weight: number;
+  reps: number;
+}
+
 export interface ExerciseStation {
   exerciseId: string;
   participantIds: string[]; // 1-2 people
+  sets?: SetConfig[]; // If omitted, falls back to default 5-set scheme
 }
 
 export interface CreateWorkoutSessionInput {

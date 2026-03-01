@@ -39,6 +39,17 @@ export async function createWorkoutSession(
       };
     }
 
+    if (input.stations.some((s) => s.sets !== undefined && s.sets.length === 0)) {
+      console.warn("[sessionService:createWorkoutSession] Validation failed: station sets array is empty");
+      return {
+        success: false,
+        error: {
+          code: ErrorCode.VALIDATION_ERROR,
+          message: "Each station's sets array must not be empty if provided",
+        },
+      };
+    }
+
     const session = queries.createWorkoutSession(input);
     console.log("[sessionService:createWorkoutSession] Created session:", session.id);
     return { success: true, data: session };

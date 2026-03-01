@@ -173,14 +173,21 @@ export function createWorkoutSession(
           weight_unit: input.weightUnit,
         });
 
-        // Create 5 sets for each participant
-        // First set: 10 reps, remaining sets: 5 reps
-        for (let setIndex = 0; setIndex < 5; setIndex++) {
+        // Create sets for each participant (dynamic config or default 5-set scheme)
+        const setsConfig = station.sets ?? [
+          { weight: 0, reps: 10 },
+          { weight: 0, reps: 5 },
+          { weight: 0, reps: 5 },
+          { weight: 0, reps: 5 },
+          { weight: 0, reps: 5 },
+        ];
+
+        for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
           createSet({
             participant_id: participant.id,
             set_index: setIndex,
-            weight: 0,
-            reps: setIndex === 0 ? 10 : 5,
+            weight: setsConfig[setIndex].weight,
+            reps: setsConfig[setIndex].reps,
           });
         }
       }
