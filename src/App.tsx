@@ -121,7 +121,7 @@ const App = () => {
                   key={participant.id}
                   personName={participant.person.name.toUpperCase()}
                   exercise={exercise}
-                  isActive
+                  isActive={participant.is_active}
                   onSetComplete={(setIndex) =>
                     handleSetComplete(participant.id, setIndex)
                   }
