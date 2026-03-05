@@ -1,15 +1,15 @@
-import { useEffect, useState } from 'react';
-import type { ParticipantWithSets } from '../db/types';
-import { useCompleteSet } from '../hooks/mutations/useSetMutations';
-import { useUpdateSessionParticipant } from '../hooks/mutations/useSessionParticipantMutations';
-import { formatTime } from '../utils/timeFormat';
-import styles from './WorkoutTimer.module.scss';
+import { useEffect, useState } from "react";
+import type { ParticipantWithSets } from "../db/types";
+import { useCompleteSet } from "../hooks/mutations/useSetMutations";
+import { useUpdateSessionParticipant } from "../hooks/mutations/useSessionParticipantMutations";
+import { formatTime } from "../utils/timeFormat";
+import styles from "./WorkoutTimer.module.scss";
 
 interface WorkoutTimerProps {
   participants: ParticipantWithSets[];
 }
 
-const PERIOD_DURATION = 90; // seconds (1:30)
+const PERIOD_DURATION = 5; // seconds (1:30)
 
 export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
   const [timeRemaining, setTimeRemaining] = useState(PERIOD_DURATION);
@@ -20,7 +20,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
   // Check if all sets are complete
   const allSetsComplete = participants.every((p) =>
-    p.sets.every((s) => s.completed)
+    p.sets.every((s) => s.completed),
   );
 
   // Stop timer if all sets are complete
@@ -32,6 +32,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
   // Handle period end when timer reaches 0
   useEffect(() => {
+    console.log("geting in here");
     if (timeRemaining > 0) return;
     if (allSetsComplete) {
       setIsRunning(false);
@@ -51,6 +52,12 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
     // Toggle all participants' is_active flags
     for (const participant of participants) {
+      console.log(
+        "gonna toggle!",
+        participant.person.name,
+        "currently active:",
+        participant.is_active,
+      );
       updateParticipant.mutate({
         id: participant.id,
         input: { is_active: !participant.is_active },
@@ -59,7 +66,13 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
     // Reset timer for next period
     setTimeRemaining(PERIOD_DURATION);
-  }, [timeRemaining, participants, allSetsComplete, completeSet, updateParticipant]);
+  }, [
+    timeRemaining,
+    participants,
+    allSetsComplete,
+    completeSet,
+    updateParticipant,
+  ]);
 
   // Countdown logic
   useEffect(() => {
@@ -75,7 +88,18 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
   return (
     <div className={styles.timerContainer}>
       <div className={styles.timeDisplay}>{formatTime(timeRemaining)}</div>
-
+      <button
+        onClick={() => {
+          // toggle one participant for testing, toggle the active flag
+          const participant = participants[0];
+          updateParticipant.mutate({
+            id: participant.id,
+            input: { is_active: !participant.is_active },
+          });
+        }}
+      >
+        update
+      </button>
       {allSetsComplete && (
         <div className={`${styles.statusText} ${styles.completed}`}>
           Workout Complete!

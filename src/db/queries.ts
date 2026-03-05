@@ -142,7 +142,11 @@ export function deletePerson(id: string): boolean {
 export function createWorkoutSession(
   input: CreateWorkoutSessionInput,
 ): SessionWithParticipants {
-  console.log("[db:createWorkoutSession] Creating session with", input.stations?.length, "stations");
+  console.log(
+    "[db:createWorkoutSession] Creating session with",
+    input.stations?.length,
+    "stations",
+  );
   const db = getDatabase();
 
   const run = db.transaction(() => {
@@ -376,6 +380,9 @@ export function updateSessionParticipant(
 ): SessionParticipant | null {
   const db = getDatabase();
   const now = Date.now();
+  console.log("---");
+  console.log("input", input);
+  console.log("---");
 
   const updates: string[] = [];
   const values: any[] = [];
@@ -567,7 +574,10 @@ export function getSessionWithParticipants(
 
 export function getActiveSessionWithParticipants(): SessionWithParticipants | null {
   const session = getActiveWorkoutSession();
-  console.log("[db:getActiveSessionWithParticipants] Active session:", session ? session.id : "none");
+  console.log(
+    "[db:getActiveSessionWithParticipants] Active session:",
+    session ? session.id : "none",
+  );
   if (!session) return null;
 
   return getSessionWithParticipants(session.id);
