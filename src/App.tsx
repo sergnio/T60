@@ -4,6 +4,7 @@ import { useActiveSessionWithParticipants } from "./hooks/queries/useWorkflowQue
 import { useCompleteSet } from "./hooks/mutations/useSetMutations.ts";
 import type { ParticipantWithSets } from "./db/types.ts";
 import { SessionCreationForm } from "./components/SessionCreationForm.tsx";
+import { WorkoutTimer } from "./components/WorkoutTimer.tsx";
 import styles from "./App.module.scss";
 
 /**
@@ -97,6 +98,8 @@ const App = () => {
 
   return (
     <div className={styles.container}>
+      {/* Timer */}
+      <WorkoutTimer participants={session.participants} />
       {/* Session name */}
       {session.name && (
         <div className={styles.sessionTitle}>{session.name}</div>

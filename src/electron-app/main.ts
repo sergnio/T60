@@ -15,7 +15,7 @@ const __dirname = dirname(__filename);
 
 const createWindow = () => {
   const win = new BrowserWindow({
-    fullscreen: true,
+    // fullscreen: true,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -32,9 +32,7 @@ const registerServiceHandlers = () => {
   ipcMain.handle("db:createExercise", (_, input) =>
     exerciseService.createExercise(input),
   );
-  ipcMain.handle("db:getAllExercises", () =>
-    exerciseService.getAllExercises(),
-  );
+  ipcMain.handle("db:getAllExercises", () => exerciseService.getAllExercises());
 
   // People
   ipcMain.handle("db:createPerson", (_, input) =>
