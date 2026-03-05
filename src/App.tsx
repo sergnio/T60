@@ -115,16 +115,15 @@ const App = () => {
           <div key={station.exerciseName} className={styles.stationColumn}>
             <div className={styles.exerciseTitle}>{station.exerciseName}</div>
             {station.participants.map((participant) => {
+              const { id, is_active } = participant;
               const exercise = mapParticipantToExercise(participant);
               return (
                 <WorkoutCardT18
-                  key={participant.id}
+                  key={id}
                   personName={participant.person.name.toUpperCase()}
                   exercise={exercise}
-                  isActive={participant.is_active}
-                  onSetComplete={(setIndex) =>
-                    handleSetComplete(participant.id, setIndex)
-                  }
+                  isActive={is_active}
+                  onSetComplete={(setIndex) => handleSetComplete(id, setIndex)}
                 />
               );
             })}
