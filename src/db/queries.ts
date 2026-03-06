@@ -380,9 +380,6 @@ export function updateSessionParticipant(
 ): SessionParticipant | null {
   const db = getDatabase();
   const now = Date.now();
-  console.log("---");
-  console.log("input", input);
-  console.log("---");
 
   const updates: string[] = [];
   const values: any[] = [];
@@ -508,6 +505,9 @@ export function updateSet(id: string, input: UpdateSetInput): Set | null {
 }
 
 export function completeSet(id: string): Set | null {
+  console.log("----");
+  console.log(`[db:completeSet] Completing set ${id}`);
+  console.log("----");
   return updateSet(id, {
     completed: true,
     completed_at: Date.now(),

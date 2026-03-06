@@ -94,9 +94,17 @@ const registerServiceHandlers = () => {
   ipcMain.handle("db:getSetsByParticipant", (_, participantId) =>
     setService.getSetsByParticipant(participantId),
   );
-  ipcMain.handle("db:updateSet", (_, id, input) =>
-    setService.updateSet(id, input),
-  );
+  ipcMain.handle("db:updateSet", (_, id, input) => {
+    console.log("---");
+    console.log(
+      "calling setService updateSet with id:",
+      id,
+      "and input:",
+      input,
+    );
+    console.log("---");
+    return setService.updateSet(id, input);
+  });
   ipcMain.handle("db:completeSet", (_, id) => setService.completeSet(id));
   ipcMain.handle("db:deleteSet", (_, id) => setService.deleteSet(id));
 

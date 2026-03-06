@@ -44,8 +44,20 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
     // Complete all active participants' current sets
     for (const participant of activeParticipants) {
+      console.log("----");
+
+      console.log("gonna do tihs?");
+      console.log("----");
       const currentSet = participant.sets[participant.current_set_index];
       if (currentSet && !currentSet.completed) {
+        console.log("----");
+        console.log(
+          "completing set for",
+          participant.person.name,
+          "set index:",
+          participant.current_set_index,
+        );
+        console.log("----");
         completeSet.mutate(currentSet.id);
       }
     }
