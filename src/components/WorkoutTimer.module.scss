@@ -44,6 +44,29 @@
   }
 }
 
+.restIndicator {
+  font-size: $font-size-2xl;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: $red-400;
+  margin-bottom: 0.5rem;
+  animation: pulse 2s ease-in-out infinite;
+
+  @media (prefers-color-scheme: dark) {
+    color: $red-400;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
 .timeDisplay {
   font-size: $font-size-6xl;
   font-weight: 700;

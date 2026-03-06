@@ -9,10 +9,13 @@ interface WorkoutTimerProps {
   participants: ParticipantWithSets[];
 }
 
-const PERIOD_DURATION = 5; // seconds (1:30)
+const REST_TIMER_DURATION = 10; // Initial rest period in seconds - CLEARLY A REST TIMER
+const PERIOD_DURATION = 5; // Regular workout period duration
 
 export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
-  const [timeRemaining, setTimeRemaining] = useState(PERIOD_DURATION);
+  const [isInitialRest, setIsInitialRest] = useState(true); // True during the initial 10-second rest timer
+  const [hasInitialized, setHasInitialized] = useState(false); // Tracks if participants have been initialized
+  const [timeRemaining, setTimeRemaining] = useState(REST_TIMER_DURATION);
   const [isRunning, setIsRunning] = useState(true);
 
   const completeSet = useCompleteSet();
@@ -30,24 +33,27 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
     }
   }, [allSetsComplete]);
 
-  // Handle period end when timer reaches 0
-  useEffect(() => {
-    console.log("geting in here");
-    if (timeRemaining > 0) return;
-    if (allSetsComplete) {
-      setIsRunning(false);
-      return;
-    }
+  // Handle rest timer completion - activate even-indexed participants
+  const handleRestTimerComplete = () => {
+    // REST TIMER COMPLETE - Activate participants at even indices (0, 2, 4, ...)
+    participants.forEach((participant, index) => {
+      const shouldBeActive = index % 2 === 0; // Even indices are active
 
-    // Period ended - complete active sets and toggle participants
+      updateParticipant.mutate({
+        id: participant.id,
+        input: { is_active: shouldBeActive },
+      });
+    });
+
+    setIsInitialRest(false); // Exit rest phase
+    setHasInitialized(true); // Mark initialization complete
+  };
+
+  // Handle regular period completion - toggle participants and complete sets
+  const handlePeriodComplete = () => {
+    // Complete sets for all currently active participants
     const activeParticipants = participants.filter((p) => p.is_active);
-
-    // Complete all active participants' current sets
-    for (const participant of activeParticipants) {
-      console.log("----");
-
-      console.log("gonna do tihs?");
-      console.log("----");
+    activeParticipants.forEach((participant) => {
       const currentSet = participant.sets[participant.current_set_index];
       if (currentSet && !currentSet.completed) {
         console.log("----");
@@ -60,10 +66,10 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
         console.log("----");
         completeSet.mutate(currentSet.id);
       }
-    }
+    });
 
     // Toggle all participants' is_active flags
-    for (const participant of participants) {
+    participants.forEach((participant) => {
       console.log(
         "gonna toggle!",
         participant.person.name,
@@ -74,16 +80,32 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
         id: participant.id,
         input: { is_active: !participant.is_active },
       });
+    });
+  };
+
+  // Handle period end when timer reaches 0
+  useEffect(() => {
+    console.log("getting in here");
+    if (timeRemaining > 0) return;
+    if (allSetsComplete) {
+      setIsRunning(false);
+      return;
     }
 
-    // Reset timer for next period
-    setTimeRemaining(PERIOD_DURATION);
+    if (isInitialRest) {
+      // REST TIMER COMPLETE - Initialize active participants
+      handleRestTimerComplete();
+      setTimeRemaining(PERIOD_DURATION); // Start first workout period
+    } else {
+      // Regular period complete - toggle and start next period
+      handlePeriodComplete();
+      setTimeRemaining(PERIOD_DURATION); // Reset timer for next period
+    }
   }, [
     timeRemaining,
     participants,
     allSetsComplete,
-    completeSet,
-    updateParticipant,
+    isInitialRest,
   ]);
 
   // Countdown logic
@@ -99,6 +121,9 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
   return (
     <div className={styles.timerContainer}>
+      {isInitialRest && (
+        <div className={styles.restIndicator}>REST TIMER</div>
+      )}
       <div className={styles.timeDisplay}>{formatTime(timeRemaining)}</div>
       <button
         onClick={() => {

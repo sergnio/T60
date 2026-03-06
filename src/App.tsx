@@ -94,12 +94,17 @@ const App = () => {
     );
   }
 
-  const stations = groupByExercise(session.participants);
+  // Sort participants by ID to ensure consistent ordering for even/odd activation
+  const sortedParticipants = [...session.participants].sort((a, b) =>
+    a.id.localeCompare(b.id)
+  );
+
+  const stations = groupByExercise(sortedParticipants);
 
   return (
     <div className={styles.container}>
       {/* Timer */}
-      <WorkoutTimer participants={session.participants} />
+      <WorkoutTimer participants={sortedParticipants} />
       {/* Session name */}
       {session.name && (
         <div className={styles.sessionTitle}>{session.name}</div>
