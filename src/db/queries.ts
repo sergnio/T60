@@ -326,7 +326,7 @@ export function createSessionParticipant(
     input.exercise_id || null,
     input.weight_unit,
     0,
-    0,
+    input.is_active,
     now,
     now,
   );
@@ -508,10 +508,48 @@ export function completeSet(id: string): Set | null {
   console.log("----");
   console.log(`[db:completeSet] Completing set ${id}`);
   console.log("----");
-  return updateSet(id, {
-    completed: true,
-    completed_at: Date.now(),
-  });
+
+  const db = getDatabase();
+
+  return db.transaction(() => {
+    const now = Date.now();
+
+    // 1. Get the set to find which participant it belongs to
+    const set = getSet(id);
+    if (!set) return null;
+
+    // Get participant before update for logging
+    const participantBefore = getSessionParticipant(set.participant_id);
+    console.log(
+      `[db:completeSet] Participant ${set.participant_id} current_set_index BEFORE: ${participantBefore?.current_set_index}`,
+    );
+
+    // 2. Complete the set
+    db.prepare(
+      `
+      UPDATE sets
+      SET completed = 1, completed_at = ?, updated_at = ?
+      WHERE id = ?
+    `,
+    ).run(now, now, id);
+
+    // 3. Increment the participant's current_set_index
+    db.prepare(
+      `
+      UPDATE session_participants
+      SET current_set_index = current_set_index + 1, updated_at = ?
+      WHERE id = ?
+    `,
+    ).run(now, set.participant_id);
+
+    // Get participant after update for logging
+    const participantAfter = getSessionParticipant(set.participant_id);
+    console.log(
+      `[db:completeSet] Participant ${set.participant_id} current_set_index AFTER: ${participantAfter?.current_set_index}`,
+    );
+
+    return getSet(id);
+  })();
 }
 
 export function deleteSet(id: string): boolean {

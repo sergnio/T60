@@ -9,7 +9,16 @@ import type { Set, CreateSetInput, UpdateSetInput } from "../db/types.js";
 export async function createSet(
   input: CreateSetInput,
 ): Promise<ServiceResult<Set>> {
-  console.log("[setService:createSet] Creating set for participant:", input.participant_id, "index:", input.set_index, "weight:", input.weight, "reps:", input.reps);
+  console.log(
+    "[setService:createSet] Creating set for participant:",
+    input.participant_id,
+    "index:",
+    input.set_index,
+    "weight:",
+    input.weight,
+    "reps:",
+    input.reps,
+  );
   try {
     const set = queries.createSet(input);
     console.log("[setService:createSet] Created set:", set.id);
@@ -49,7 +58,10 @@ export async function getSet(id: string): Promise<ServiceResult<Set | null>> {
 export async function getSetsByParticipant(
   participantId: string,
 ): Promise<ServiceResult<Set[]>> {
-  console.log("[setService:getSetsByParticipant] Fetching sets for participant:", participantId);
+  console.log(
+    "[setService:getSetsByParticipant] Fetching sets for participant:",
+    participantId,
+  );
   try {
     const sets = queries.getSetsByParticipant(participantId);
     console.log("[setService:getSetsByParticipant] Found", sets.length, "sets");
@@ -71,10 +83,12 @@ export async function updateSet(
   id: string,
   input: UpdateSetInput,
 ): Promise<ServiceResult<Set | null>> {
-  console.log("[setService:updateSet] Updating set:", id, "with:", JSON.stringify(input));
   try {
     const set = queries.updateSet(id, input);
-    console.log("[setService:updateSet] Updated:", set ? "success" : "not found");
+    console.log(
+      "[setService:updateSet] Updated:",
+      set ? "success" : "not found",
+    );
     return { success: true, data: set };
   } catch (error) {
     console.error("[setService:updateSet] Failed:", error);
@@ -92,10 +106,12 @@ export async function updateSet(
 export async function completeSet(
   id: string,
 ): Promise<ServiceResult<Set | null>> {
-  console.log("[setService:completeSet] Completing set:", id);
   try {
     const set = queries.completeSet(id);
-    console.log("[setService:completeSet] Completed:", set ? "success" : "not found");
+    console.log(
+      "[setService:completeSet] Completed:",
+      set ? "success" : "not found",
+    );
     return { success: true, data: set };
   } catch (error) {
     console.error("[setService:completeSet] Failed:", error);
