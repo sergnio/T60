@@ -5,6 +5,7 @@ import * as queries from "../db/queries.js";
 import type { ServiceResult } from "./types/serviceResults.js";
 import { ErrorCode } from "./types/serviceResults.js";
 import type { Set, CreateSetInput, UpdateSetInput } from "../db/types.js";
+import * as rotationService from "./rotationService.js";
 
 export async function createSet(
   input: CreateSetInput,
@@ -112,6 +113,18 @@ export async function completeSet(
       "[setService:completeSet] Completed:",
       set ? "success" : "not found",
     );
+
+    // Check if all sets for this participant are completed and trigger rotation if needed
+    if (set) {
+      const rotationResult = await rotationService.checkAndRotate(set.participant_id);
+      if (rotationResult.success && rotationResult.data.rotated) {
+        console.log(
+          "[setService:completeSet] Rotation triggered:",
+          rotationResult.data.nextExercise ? "moved to next exercise" : "rotation complete",
+        );
+      }
+    }
+
     return { success: true, data: set };
   } catch (error) {
     console.error("[setService:completeSet] Failed:", error);

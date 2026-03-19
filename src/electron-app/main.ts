@@ -8,6 +8,7 @@ import * as setService from "../services/setService.js";
 import * as workflowService from "../services/workflowService.js";
 import * as exerciseService from "../services/exerciseService.js";
 import * as maxWeightService from "../services/maxWeightService.js";
+import * as rotationService from "../services/rotationService.js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -139,6 +140,17 @@ const registerServiceHandlers = () => {
   );
   ipcMain.handle("db:deletePersonMaxWeight", (_, personId, exerciseId) =>
     maxWeightService.deletePersonMaxWeight(personId, exerciseId),
+  );
+
+  // Rotation (multi-exercise sessions)
+  ipcMain.handle("db:createRotationSession", (_, input) =>
+    rotationService.createRotationSession(input),
+  );
+  ipcMain.handle("db:getSessionAssignments", (_, sessionId) =>
+    rotationService.getSessionAssignments(sessionId),
+  );
+  ipcMain.handle("db:checkAndRotate", (_, participantId) =>
+    rotationService.checkAndRotate(participantId),
   );
 
   // Seed database

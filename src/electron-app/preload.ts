@@ -11,6 +11,7 @@ import type {
   UpdateWorkoutSessionInput,
   WeightUnit,
 } from "../db/types.js";
+import type { CreateRotationSessionInput } from "../services/rotationService.js";
 
 /**
  * Database API exposed to the renderer process
@@ -100,6 +101,14 @@ const databaseAPI = {
     ipcRenderer.invoke("db:getPersonMaxWeight", personId, exerciseId),
   deletePersonMaxWeight: (personId: string, exerciseId: string) =>
     ipcRenderer.invoke("db:deletePersonMaxWeight", personId, exerciseId),
+
+  // Rotation (multi-exercise sessions)
+  createRotationSession: (input: CreateRotationSessionInput) =>
+    ipcRenderer.invoke("db:createRotationSession", input),
+  getSessionAssignments: (sessionId: string) =>
+    ipcRenderer.invoke("db:getSessionAssignments", sessionId),
+  checkAndRotate: (participantId: string) =>
+    ipcRenderer.invoke("db:checkAndRotate", participantId),
 
   // Seed database for testing
   seedDatabase: () => ipcRenderer.invoke("db:seedDatabase"),
