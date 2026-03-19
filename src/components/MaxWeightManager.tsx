@@ -6,6 +6,7 @@ import {
   useSetPersonMaxWeight,
   useDeletePersonMaxWeight,
 } from "../hooks/mutations/useMaxWeightMutations.ts";
+import { MaxWeightEditForm } from "./MaxWeightEditForm.tsx";
 import type { WeightUnit } from "../db/types.ts";
 import styles from "./MaxWeightManager.module.scss";
 
@@ -138,44 +139,15 @@ export function MaxWeightManager() {
                   )}
 
                   {isEditing && (
-                    <div className={styles.editForm}>
-                      <input
-                        type="number"
-                        value={editWeight}
-                        onChange={(e) => setEditWeight(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && editWeight && parseFloat(editWeight) > 0) {
-                            handleSaveMaxWeight(exercise.id);
-                          }
-                        }}
-                        placeholder="Weight"
-                        className={styles.weightInput}
-                        min="0"
-                        step="0.5"
+                    <div className={styles.editFormWrapper}>
+                      <MaxWeightEditForm
+                        weight={editWeight}
+                        unit={editUnit}
+                        onWeightChange={setEditWeight}
+                        onUnitChange={setEditUnit}
+                        onSave={() => handleSaveMaxWeight(exercise.id)}
+                        onCancel={handleCancel}
                       />
-                      <select
-                        value={editUnit}
-                        onChange={(e) =>
-                          setEditUnit(e.target.value as WeightUnit)
-                        }
-                        className={styles.unitSelect}
-                      >
-                        <option value="lbs">lbs</option>
-                        <option value="kg">kg</option>
-                      </select>
-                      <button
-                        onClick={() => handleSaveMaxWeight(exercise.id)}
-                        className={styles.saveButton}
-                        disabled={!editWeight || parseFloat(editWeight) <= 0}
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancel}
-                        className={styles.cancelButton}
-                      >
-                        Cancel
-                      </button>
                     </div>
                   )}
                 </div>

@@ -9,13 +9,22 @@ import type {
   UpdateWorkoutSessionInput,
   SessionWithParticipants,
 } from "../../db/types.ts";
+import type { ServiceResult } from "../../services/types/serviceResults.ts";
 
 export function useCreateWorkoutSession() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: CreateWorkoutSessionInput) => {
-      const result = await window.database.createWorkoutSession(input);
-      return result as SessionWithParticipants;
+      const result = (await window.database.createWorkoutSession(
+        input
+      )) as ServiceResult<SessionWithParticipants>;
+
+      // Check if the service returned an error
+      if (!result.success) {
+        throw result.error;
+      }
+
+      return result.data;
     },
     onSuccess: () => {
       // Invalidate all session queries to trigger refetch

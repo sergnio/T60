@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAllPeople } from "../hooks/queries/usePeople.ts";
 import { useAllExercises } from "../hooks/queries/useExercises.ts";
 import { useCreateWorkoutSession } from "../hooks/mutations/useWorkoutSessionMutations.ts";
 import { useCreateExercise } from "../hooks/mutations/useExerciseMutations.ts";
+import { MissingMaxWeightsPopup } from "./MissingMaxWeightsPopup.tsx";
 import type { ExerciseStation } from "../db/types.ts";
 import styles from "./SessionCreationForm.module.scss";
 
@@ -21,6 +22,14 @@ export function SessionCreationForm() {
 
   const [stations, setStations] = useState<StationState[]>([]);
   const [customExerciseName, setCustomExerciseName] = useState("");
+  const [missingMaxWeights, setMissingMaxWeights] = useState<
+    { personId: string; exerciseId: string }[]
+  >([]);
+  const [showMissingMaxWeightsPopup, setShowMissingMaxWeightsPopup] =
+    useState(false);
+  const [pendingStationInputs, setPendingStationInputs] = useState<
+    ExerciseStation[] | null
+  >(null);
 
   // All person IDs already assigned to a station
   const assignedPersonIds = new Set(
@@ -89,7 +98,7 @@ export function SessionCreationForm() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isValid) return;
 
@@ -98,10 +107,52 @@ export function SessionCreationForm() {
       participantIds: Array.from(s.participantIds),
     }));
 
-    createSession.mutate({
-      weightUnit: "lbs",
-      stations: stationInputs,
-    });
+    setPendingStationInputs(stationInputs);
+
+    createSession.mutate(
+      {
+        weightUnit: "lbs",
+        stations: stationInputs,
+      },
+      {
+        onError: (error: any) => {
+          console.log("[SessionCreationForm] Error creating session:", error);
+
+          // Check if it's a missing max weight error
+          // The error message format from the service is: "Max weight not found for participant"
+          if (error?.message?.includes("Max weight not found")) {
+            // Build list of all person+exercise combinations that need max weights
+            const missing: { personId: string; exerciseId: string }[] = [];
+
+            for (const station of stationInputs) {
+              for (const personId of station.participantIds) {
+                missing.push({
+                  personId,
+                  exerciseId: station.exerciseId,
+                });
+              }
+            }
+
+            console.log("[SessionCreationForm] Missing max weights:", missing);
+            setMissingMaxWeights(missing);
+            setShowMissingMaxWeightsPopup(true);
+          }
+        },
+      }
+    );
+  };
+
+  const handleMissingMaxWeightsClose = () => {
+    // Just close the popup - user can manually click "Start Session" again
+    setShowMissingMaxWeightsPopup(false);
+    setMissingMaxWeights([]);
+    setPendingStationInputs(null);
+  };
+
+  const handleMissingMaxWeightsCancel = () => {
+    setShowMissingMaxWeightsPopup(false);
+    setMissingMaxWeights([]);
+    setPendingStationInputs(null);
   };
 
   if (isPeopleLoading || isExercisesLoading) {
@@ -229,6 +280,16 @@ export function SessionCreationForm() {
           {createSession.isPending ? "Starting..." : "Start Session"}
         </button>
       </form>
+
+      {/* Missing Max Weights Popup */}
+      {showMissingMaxWeightsPopup && (
+        <MissingMaxWeightsPopup
+          missingMaxWeights={missingMaxWeights}
+          people={people}
+          onClose={handleMissingMaxWeightsClose}
+          onCancel={handleMissingMaxWeightsCancel}
+        />
+      )}
     </div>
   );
 }
