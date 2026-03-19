@@ -57,6 +57,69 @@ function runMigrations(database: Database.Database): void {
       CREATE INDEX IF NOT EXISTS idx_person_max_weights_exercise ON person_max_weights(exercise_id);
     `);
   }
+
+  // Migrate people table to add DEFAULT values
+  const peopleColumns = database
+    .prepare("PRAGMA table_info(people)")
+    .all() as { name: string; dflt_value: string | null }[];
+  const idColumn = peopleColumns.find((col) => col.name === "id");
+  const needsPeopleMigration = idColumn && idColumn.dflt_value === null;
+
+  if (needsPeopleMigration) {
+    console.log("Migration: adding DEFAULT values to people table");
+    database.exec(`
+      -- Create new people table with DEFAULT values
+      CREATE TABLE people_new (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        name TEXT NOT NULL,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+      );
+
+      -- Copy existing data
+      INSERT INTO people_new (id, name, created_at, updated_at)
+      SELECT id, name, created_at, updated_at FROM people;
+
+      -- Drop old table
+      DROP TABLE people;
+
+      -- Rename new table
+      ALTER TABLE people_new RENAME TO people;
+
+      -- Recreate index
+      CREATE INDEX IF NOT EXISTS idx_people_name ON people(name);
+    `);
+  }
+
+  // Migrate exercises table to add DEFAULT values
+  const exerciseColumns = database
+    .prepare("PRAGMA table_info(exercises)")
+    .all() as { name: string; dflt_value: string | null }[];
+  const exerciseIdColumn = exerciseColumns.find((col) => col.name === "id");
+  const needsExerciseMigration = exerciseIdColumn && exerciseIdColumn.dflt_value === null;
+
+  if (needsExerciseMigration) {
+    console.log("Migration: adding DEFAULT values to exercises table");
+    database.exec(`
+      -- Create new exercises table with DEFAULT values
+      CREATE TABLE exercises_new (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        name TEXT NOT NULL UNIQUE,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+      );
+
+      -- Copy existing data
+      INSERT INTO exercises_new (id, name, created_at, updated_at)
+      SELECT id, name, created_at, updated_at FROM exercises;
+
+      -- Drop old table
+      DROP TABLE exercises;
+
+      -- Rename new table
+      ALTER TABLE exercises_new RENAME TO exercises;
+    `);
+  }
 }
 
 /**
@@ -114,17 +177,16 @@ export function getDatabase(): Database.Database {
  */
 function ensureDefaultPeople(): void {
   const database = getDatabase();
-  const now = Date.now();
   const defaultPeople = ["Tony", "Kakes", "Noah", "Sergio"];
 
   const stmt = database.prepare(`
-    INSERT OR IGNORE INTO people (id, name, created_at, updated_at)
-    SELECT ?, ?, ?, ?
+    INSERT OR IGNORE INTO people (name)
+    SELECT ?
     WHERE NOT EXISTS (SELECT 1 FROM people WHERE name = ?)
   `);
 
   for (const name of defaultPeople) {
-    stmt.run(crypto.randomUUID(), name, now, now, name);
+    stmt.run(name, name);
   }
 }
 
@@ -133,7 +195,6 @@ function ensureDefaultPeople(): void {
  */
 function ensureDefaultExercises(): void {
   const database = getDatabase();
-  const now = Date.now();
   const defaultExercises = [
     "Bench Press",
     "Pull-ups",
@@ -144,13 +205,13 @@ function ensureDefaultExercises(): void {
   ];
 
   const stmt = database.prepare(`
-    INSERT OR IGNORE INTO exercises (id, name, created_at, updated_at)
-    SELECT ?, ?, ?, ?
+    INSERT OR IGNORE INTO exercises (name)
+    SELECT ?
     WHERE NOT EXISTS (SELECT 1 FROM exercises WHERE name = ?)
   `);
 
   for (const name of defaultExercises) {
-    stmt.run(crypto.randomUUID(), name, now, now, name);
+    stmt.run(name, name);
   }
 }
 
@@ -176,22 +237,18 @@ export function seedDatabase(): void {
   const now = Date.now();
 
   // Create people
-  const people = [
-    { id: crypto.randomUUID(), name: "TONY" },
-    { id: crypto.randomUUID(), name: "SERGIO" },
-    { id: crypto.randomUUID(), name: "STEVE" },
-    { id: crypto.randomUUID(), name: "NOAH" },
-    { id: crypto.randomUUID(), name: "VICTORIA" },
-    { id: crypto.randomUUID(), name: "KAKES" },
-  ];
+  const peopleNames = ["TONY", "SERGIO", "STEVE", "NOAH", "VICTORIA", "KAKES"];
+  const people: { id: string; name: string }[] = [];
 
   const insertPerson = database.prepare(`
-    INSERT INTO people (id, name, created_at, updated_at)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO people (name)
+    VALUES (?)
+    RETURNING id
   `);
 
-  for (const person of people) {
-    insertPerson.run(person.id, person.name, now, now);
+  for (const name of peopleNames) {
+    const result = insertPerson.get(name) as { id: string };
+    people.push({ id: result.id, name });
   }
 
   // Create a workout session

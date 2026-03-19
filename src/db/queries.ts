@@ -26,17 +26,16 @@ import type {
 
 export function createExercise(input: CreateExerciseInput): Exercise {
   const db = getDatabase();
-  const id = crypto.randomUUID();
-  const now = Date.now();
 
-  db.prepare(
+  const result = db.prepare(
     `
-    INSERT INTO exercises (id, name, created_at, updated_at)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO exercises (name)
+    VALUES (?)
+    RETURNING id
   `,
-  ).run(id, input.name, now, now);
+  ).get(input.name) as { id: string };
 
-  return getExercise(id)!;
+  return getExercise(result.id)!;
 }
 
 export function getExercise(id: string): Exercise | null {
@@ -69,17 +68,16 @@ export function getAllExercises(): Exercise[] {
 
 export function createPerson(input: CreatePersonInput): Person {
   const db = getDatabase();
-  const id = crypto.randomUUID();
-  const now = Date.now();
 
-  db.prepare(
+  const result = db.prepare(
     `
-    INSERT INTO people (id, name, created_at, updated_at)
-    VALUES (?, ?, ?, ?)
+    INSERT INTO people (name)
+    VALUES (?)
+    RETURNING id
   `,
-  ).run(id, input.name, now, now);
+  ).get(input.name) as { id: string };
 
-  return getPerson(id)!;
+  return getPerson(result.id)!;
 }
 
 export function getPerson(id: string): Person | null {

@@ -3,18 +3,18 @@
 
 -- Exercises
 CREATE TABLE IF NOT EXISTS exercises (
-  id TEXT PRIMARY KEY,
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),  -- Auto-generated UUID
   name TEXT NOT NULL UNIQUE,
-  created_at INTEGER NOT NULL,
-  updated_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),  -- Auto-generated Unix timestamp
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch())   -- Auto-generated Unix timestamp
 );
 
 -- People/Athletes
 CREATE TABLE IF NOT EXISTS people (
-  id TEXT PRIMARY KEY,                    -- UUID
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),  -- Auto-generated UUID
   name TEXT NOT NULL,                     -- e.g., "TONY", "STEVE"
-  created_at INTEGER NOT NULL,            -- Unix timestamp
-  updated_at INTEGER NOT NULL
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),  -- Auto-generated Unix timestamp
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch())   -- Auto-generated Unix timestamp
 );
 
 CREATE INDEX IF NOT EXISTS idx_people_name ON people(name);
