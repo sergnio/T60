@@ -325,6 +325,78 @@ export async function getSessionAssignments(
 }
 
 /**
+ * Rotates all participants at an exercise to their next exercise
+ * Called when all participants at an exercise complete the same set
+ */
+export async function rotateAllParticipantsAtExercise(
+  sessionId: string,
+  exerciseId: string,
+): Promise<ServiceResult<{ rotated: boolean; participantCount: number }>> {
+  try {
+    // Get all active participants at this exercise
+    const allParticipants = queries.getSessionParticipants(sessionId);
+    const participantsAtExercise = allParticipants.filter(
+      (p) => p.exercise_id === exerciseId && p.status === "active"
+    );
+
+    if (participantsAtExercise.length === 0) {
+      return {
+        success: true,
+        data: { rotated: false, participantCount: 0 },
+      };
+    }
+
+    console.log(
+      `[rotationService] Rotating ${participantsAtExercise.length} participants from exercise ${exerciseId}`
+    );
+
+    // Rotate each participant to their next exercise
+    for (const participant of participantsAtExercise) {
+      const nextParticipant = queries.completeExerciseAndRotate(participant.id);
+
+      // If next exercise was activated, create sets for it
+      if (nextParticipant && nextParticipant.status === "active") {
+        const setsConfig = generateSetsConfig(
+          nextParticipant.person_id,
+          nextParticipant.exercise_id!,
+        );
+
+        for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
+          queries.createSet({
+            participant_id: nextParticipant.id,
+            set_index: setIndex,
+            weight: setsConfig[setIndex].weight,
+            reps: setsConfig[setIndex].reps,
+          });
+        }
+
+        console.log(
+          `[rotationService] Rotated ${participant.person_id} to ${nextParticipant.exercise_name}`
+        );
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        rotated: true,
+        participantCount: participantsAtExercise.length,
+      },
+    };
+  } catch (error) {
+    console.error("[rotationService] Failed to rotate all participants:", error);
+    return {
+      success: false,
+      error: {
+        code: ErrorCode.DATABASE_ERROR,
+        message: "Failed to rotate all participants at exercise",
+        details: error,
+      },
+    };
+  }
+}
+
+/**
  * Checks if a participant has completed all sets for their current exercise
  * and triggers rotation if so
  */

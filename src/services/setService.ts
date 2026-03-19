@@ -114,14 +114,44 @@ export async function completeSet(
       set ? "success" : "not found",
     );
 
-    // Check if all sets for this participant are completed and trigger rotation if needed
+    // Check if all participants at this exercise have completed the current set
     if (set) {
-      const rotationResult = await rotationService.checkAndRotate(set.participant_id);
-      if (rotationResult.success && rotationResult.data.rotated) {
-        console.log(
-          "[setService:completeSet] Rotation triggered:",
-          rotationResult.data.nextExercise ? "moved to next exercise" : "rotation complete",
+      const participant = queries.getSessionParticipant(set.participant_id);
+      if (participant && participant.exercise_id) {
+        // Get all active participants at this exercise
+        const allParticipants = queries.getSessionParticipants(participant.session_id);
+        const participantsAtExercise = allParticipants.filter(
+          (p) => p.exercise_id === participant.exercise_id && p.status === "active"
         );
+
+        // Check if all participants at this exercise have completed the current set
+        const allCompletedCurrentSet = participantsAtExercise.every((p) => {
+          const sets = queries.getSetsByParticipant(p.id);
+          const currentSet = sets[set.set_index];
+          return currentSet?.completed;
+        });
+
+        console.log(
+          `[setService:completeSet] All participants at exercise completed set ${set.set_index}:`,
+          allCompletedCurrentSet
+        );
+
+        // If all participants completed the current set, rotate everyone to next exercise
+        if (allCompletedCurrentSet) {
+          console.log(
+            `[setService:completeSet] Triggering rotation for all participants at exercise ${participant.exercise_id}`
+          );
+          const rotationResult = await rotationService.rotateAllParticipantsAtExercise(
+            participant.session_id,
+            participant.exercise_id
+          );
+
+          if (rotationResult.success && rotationResult.data.rotated) {
+            console.log(
+              `[setService:completeSet] Rotated ${rotationResult.data.participantCount} participants`
+            );
+          }
+        }
       }
     }
 
