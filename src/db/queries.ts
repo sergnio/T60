@@ -311,8 +311,8 @@ export function createSessionParticipant(
   db.prepare(
     `
     INSERT INTO session_participants
-    (id, session_id, person_id, exercise_name, exercise_id, weight_unit, current_set_index, is_active, created_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    (id, session_id, person_id, exercise_name, exercise_id, weight_unit, current_set_index, is_active, rotation_order, status, started_at, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `,
   ).run(
     id,
@@ -322,7 +322,10 @@ export function createSessionParticipant(
     input.exercise_id || null,
     input.weight_unit,
     0,
-    input.is_active,
+    input.is_active ?? false,
+    input.rotation_order ?? 0,
+    input.status ?? "pending",
+    input.started_at ?? null,
     now,
     now,
   );
@@ -387,6 +390,18 @@ export function updateSessionParticipant(
   if (input.is_active !== undefined) {
     updates.push("is_active = ?");
     values.push(input.is_active ? 1 : 0);
+  }
+  if (input.status !== undefined) {
+    updates.push("status = ?");
+    values.push(input.status);
+  }
+  if (input.started_at !== undefined) {
+    updates.push("started_at = ?");
+    values.push(input.started_at);
+  }
+  if (input.completed_at !== undefined) {
+    updates.push("completed_at = ?");
+    values.push(input.completed_at);
   }
 
   if (updates.length > 0) {
@@ -712,4 +727,97 @@ export function deletePersonMaxWeight(
     .run(personId, exerciseId);
 
   return result.changes > 0;
+}
+
+// ============================================================================
+// ROTATION HELPERS
+// ============================================================================
+
+/**
+ * Get the next pending exercise for a participant in rotation
+ */
+export function getNextPendingExercise(
+  sessionId: string,
+  personId: string,
+): SessionParticipant | null {
+  const db = getDatabase();
+  const row = db
+    .prepare(
+      `
+    SELECT * FROM session_participants
+    WHERE session_id = ? AND person_id = ? AND status = 'pending'
+    ORDER BY rotation_order ASC
+    LIMIT 1
+  `,
+    )
+    .get(sessionId, personId) as SessionParticipant | undefined;
+
+  return row || null;
+}
+
+/**
+ * Check how many participants are currently active on an exercise
+ */
+export function getActiveCountForExercise(
+  sessionId: string,
+  exerciseId: string,
+): number {
+  const db = getDatabase();
+  const result = db
+    .prepare(
+      `
+    SELECT COUNT(*) as count
+    FROM session_participants
+    WHERE session_id = ? AND exercise_id = ? AND status = 'active'
+  `,
+    )
+    .get(sessionId, exerciseId) as { count: number };
+
+  return result.count;
+}
+
+/**
+ * Mark a participant's exercise as completed and activate next exercise if available
+ * Returns the next exercise participant record, or null if rotation is complete
+ */
+export function completeExerciseAndRotate(
+  participantId: string,
+): SessionParticipant | null {
+  const db = getDatabase();
+
+  return db.transaction(() => {
+    const now = Date.now();
+
+    // Get current participant
+    const current = getSessionParticipant(participantId);
+    if (!current) return null;
+
+    // Mark current exercise as completed
+    updateSessionParticipant(participantId, {
+      status: "completed",
+      completed_at: now,
+    });
+
+    // Get next pending exercise for this person
+    const next = getNextPendingExercise(current.session_id, current.person_id);
+    if (!next) return null; // No more exercises in rotation
+
+    // Check capacity for next exercise
+    const activeCount = getActiveCountForExercise(
+      current.session_id,
+      next.exercise_id!,
+    );
+    const maxConcurrent = 2; // TODO: Get from rotation_configs
+
+    if (activeCount < maxConcurrent) {
+      // Activate next exercise
+      updateSessionParticipant(next.id, {
+        status: "active",
+        started_at: now,
+      });
+    }
+    // If capacity is full, next exercise stays pending until space opens up
+
+    return getSessionParticipant(next.id);
+  })();
 }

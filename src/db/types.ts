@@ -43,6 +43,7 @@ export interface WorkoutSession {
 
 /**
  * Link between a person and their exercise in a session
+ * Supports rotation: one person can have multiple records (one per exercise)
  */
 export interface SessionParticipant {
   id: string;
@@ -52,7 +53,11 @@ export interface SessionParticipant {
   exercise_id: string | null;
   weight_unit: WeightUnit;
   current_set_index: number;
-  is_active: boolean;
+  is_active: boolean; // Is it their turn within this exercise (toggle with partner)
+  rotation_order: number; // Position in rotation sequence (0, 1, 2...)
+  status: "pending" | "active" | "completed"; // Exercise status
+  started_at: number | null;
+  completed_at: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -104,6 +109,9 @@ export interface CreateSessionParticipantInput {
   exercise_id: string | null;
   weight_unit: WeightUnit;
   is_active?: boolean; // Optional, defaults to false
+  rotation_order?: number; // Optional, defaults to 0
+  status?: "pending" | "active" | "completed"; // Optional, defaults to 'pending'
+  started_at?: number | null;
 }
 
 export interface CreateSetInput {
@@ -130,6 +138,9 @@ export interface UpdateWorkoutSessionInput {
 export interface UpdateSessionParticipantInput {
   current_set_index?: number;
   is_active?: boolean;
+  status?: "pending" | "active" | "completed";
+  started_at?: number | null;
+  completed_at?: number | null;
 }
 
 export interface UpdateSetInput {
@@ -161,6 +172,16 @@ export interface PersonMaxWeight {
   exercise_id: string;
   max_weight: number;
   weight_unit: WeightUnit;
+  created_at: number;
+  updated_at: number;
+}
+
+/** Rotation configuration for a session */
+export interface RotationConfig {
+  id: string;
+  session_id: string;
+  exercise_order: string; // JSON array of exercise_ids
+  max_concurrent_per_exercise: number;
   created_at: number;
   updated_at: number;
 }

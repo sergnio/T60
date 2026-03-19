@@ -120,6 +120,64 @@ function runMigrations(database: Database.Database): void {
       ALTER TABLE exercises_new RENAME TO exercises;
     `);
   }
+
+  // Migrate session_participants to add rotation support
+  const participantColumns = database
+    .prepare("PRAGMA table_info(session_participants)")
+    .all() as { name: string }[];
+  const hasRotationOrder = participantColumns.some((col) => col.name === "rotation_order");
+
+  if (!hasRotationOrder) {
+    console.log("Migration: adding rotation support to session_participants");
+
+    // SQLite doesn't support adding columns with CHECK constraints via ALTER TABLE
+    // Run each ALTER TABLE separately to ensure they complete
+    database.prepare("ALTER TABLE session_participants ADD COLUMN rotation_order INTEGER NOT NULL DEFAULT 0").run();
+    database.prepare("ALTER TABLE session_participants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'").run();
+    database.prepare("ALTER TABLE session_participants ADD COLUMN started_at INTEGER").run();
+    database.prepare("ALTER TABLE session_participants ADD COLUMN completed_at INTEGER").run();
+
+    // Now set values for existing data and create indexes
+    database.prepare("UPDATE session_participants SET started_at = created_at WHERE is_active = 1").run();
+    database.prepare("CREATE INDEX IF NOT EXISTS idx_participants_status ON session_participants(status)").run();
+    database.prepare("CREATE INDEX IF NOT EXISTS idx_participants_rotation ON session_participants(session_id, person_id, rotation_order)").run();
+
+    console.log("Migration: rotation support added successfully");
+  }
+
+  // Create rotation_configs table if missing
+  const rotationConfigTables = database
+    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rotation_configs'")
+    .all() as { name: string }[];
+
+  if (rotationConfigTables.length === 0) {
+    console.log("Migration: creating rotation_configs table");
+    database.exec(`
+      CREATE TABLE rotation_configs (
+        id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+        session_id TEXT NOT NULL UNIQUE,
+        exercise_order TEXT NOT NULL,
+        max_concurrent_per_exercise INTEGER NOT NULL DEFAULT 2,
+        created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+        FOREIGN KEY (session_id) REFERENCES workout_sessions(id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_rotation_configs_session ON rotation_configs(session_id);
+
+      -- Create rotation config for each existing session
+      INSERT INTO rotation_configs (session_id, exercise_order, created_at, updated_at)
+      SELECT
+        ws.id,
+        '[' || GROUP_CONCAT(DISTINCT '"' || sp.exercise_id || '"') || ']',
+        unixepoch(),
+        unixepoch()
+      FROM workout_sessions ws
+      JOIN session_participants sp ON sp.session_id = ws.id
+      WHERE sp.exercise_id IS NOT NULL
+      GROUP BY ws.id;
+    `);
+  }
 }
 
 /**

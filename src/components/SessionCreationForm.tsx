@@ -121,14 +121,27 @@ export function SessionCreationForm() {
           // Check if it's a missing max weight error
           // The error message format from the service is: "Max weight not found for participant"
           if (error?.message?.includes("Max weight not found")) {
-            // Build list of all person+exercise combinations that need max weights
+            // Build list of ALL person+exercise combinations since participants rotate through all exercises
+            // We need to check every participant against every exercise in the workout
             const missing: { personId: string; exerciseId: string }[] = [];
 
+            // Get all unique participants and exercises
+            const allParticipantIds = new Set<string>();
+            const allExerciseIds = new Set<string>();
+
             for (const station of stationInputs) {
+              allExerciseIds.add(station.exerciseId);
               for (const personId of station.participantIds) {
+                allParticipantIds.add(personId);
+              }
+            }
+
+            // Create all combinations (Cartesian product)
+            for (const personId of allParticipantIds) {
+              for (const exerciseId of allExerciseIds) {
                 missing.push({
                   personId,
-                  exerciseId: station.exerciseId,
+                  exerciseId,
                 });
               }
             }
