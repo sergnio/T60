@@ -17,6 +17,7 @@ import type {
   ParticipantWithSets,
   SessionWithParticipants,
   PersonMaxWeight,
+  RotationConfig,
   WeightUnit,
 } from "./types.js";
 
@@ -730,6 +731,67 @@ export function deletePersonMaxWeight(
 }
 
 // ============================================================================
+// ROTATION CONFIGS
+// ============================================================================
+
+/**
+ * Create a rotation config for a session
+ */
+export function createRotationConfig(
+  sessionId: string,
+  exerciseIds: string[],
+  maxConcurrentPerExercise: number = 2,
+): void {
+  const db = getDatabase();
+  const now = Date.now();
+  const id = crypto.randomUUID();
+
+  db.prepare(
+    `
+    INSERT INTO rotation_configs (id, session_id, exercise_order, max_concurrent_per_exercise, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?)
+  `,
+  ).run(id, sessionId, JSON.stringify(exerciseIds), maxConcurrentPerExercise, now, now);
+}
+
+/**
+ * Get rotation config for a session
+ */
+export function getRotationConfig(sessionId: string): {
+  id: string;
+  session_id: string;
+  exercise_order: string[];
+  max_concurrent_per_exercise: number;
+  created_at: number;
+  updated_at: number;
+} | null {
+  const db = getDatabase();
+  const row = db
+    .prepare(
+      `
+    SELECT * FROM rotation_configs WHERE session_id = ?
+  `,
+    )
+    .get(sessionId) as
+    | {
+        id: string;
+        session_id: string;
+        exercise_order: string;
+        max_concurrent_per_exercise: number;
+        created_at: number;
+        updated_at: number;
+      }
+    | undefined;
+
+  if (!row) return null;
+
+  return {
+    ...row,
+    exercise_order: JSON.parse(row.exercise_order),
+  };
+}
+
+// ============================================================================
 // ROTATION HELPERS
 // ============================================================================
 
@@ -777,6 +839,44 @@ export function getActiveCountForExercise(
 }
 
 /**
+ * Get all completed exercises for a participant in a session
+ */
+export function getCompletedExercises(
+  sessionId: string,
+  personId: string,
+): SessionParticipant[] {
+  const db = getDatabase();
+  return db
+    .prepare(
+      `
+    SELECT * FROM session_participants
+    WHERE session_id = ? AND person_id = ? AND status = 'completed'
+    ORDER BY rotation_order ASC
+  `,
+    )
+    .all(sessionId, personId) as SessionParticipant[];
+}
+
+/**
+ * Get all incomplete exercises (pending or active) for a participant in a session
+ */
+export function getIncompleteExercises(
+  sessionId: string,
+  personId: string,
+): SessionParticipant[] {
+  const db = getDatabase();
+  return db
+    .prepare(
+      `
+    SELECT * FROM session_participants
+    WHERE session_id = ? AND person_id = ? AND status IN ('pending', 'active')
+    ORDER BY rotation_order ASC
+  `,
+    )
+    .all(sessionId, personId) as SessionParticipant[];
+}
+
+/**
  * Mark a participant's exercise as completed and activate next exercise if available
  * Returns the next exercise participant record, or null if rotation is complete
  */
@@ -802,12 +902,15 @@ export function completeExerciseAndRotate(
     const next = getNextPendingExercise(current.session_id, current.person_id);
     if (!next) return null; // No more exercises in rotation
 
+    // Get max concurrent from rotation config
+    const rotationConfig = getRotationConfig(current.session_id);
+    const maxConcurrent = rotationConfig?.max_concurrent_per_exercise ?? 2;
+
     // Check capacity for next exercise
     const activeCount = getActiveCountForExercise(
       current.session_id,
       next.exercise_id!,
     );
-    const maxConcurrent = 2; // TODO: Get from rotation_configs
 
     if (activeCount < maxConcurrent) {
       // Activate next exercise
