@@ -34,4 +34,15 @@ export const queryKeys = {
       ["sets", "participant", participantId] as const,
     detail: (id: string) => ["sets", id] as const,
   },
+  maxWeights: {
+    all: ["maxWeights"] as const,
+    byPerson: (personId: string) =>
+      [...queryKeys.maxWeights.all, "person", personId] as const,
+    detail: (personId: string, exerciseId: string) =>
+      [
+        ...queryKeys.maxWeights.byPerson(personId),
+        "exercise",
+        exerciseId,
+      ] as const,
+  },
 };

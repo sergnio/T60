@@ -9,6 +9,7 @@ import type {
   UpdateSessionParticipantInput,
   UpdateSetInput,
   UpdateWorkoutSessionInput,
+  WeightUnit,
 } from "../db/types.js";
 
 /**
@@ -78,6 +79,27 @@ const databaseAPI = {
     ipcRenderer.invoke("db:getSessionWithParticipants", sessionId),
   getActiveSessionWithParticipants: () =>
     ipcRenderer.invoke("db:getActiveSessionWithParticipants"),
+
+  // Person Max Weights
+  setPersonMaxWeight: (
+    personId: string,
+    exerciseId: string,
+    maxWeight: number,
+    weightUnit: WeightUnit,
+  ) =>
+    ipcRenderer.invoke(
+      "db:setPersonMaxWeight",
+      personId,
+      exerciseId,
+      maxWeight,
+      weightUnit,
+    ),
+  getPersonMaxWeights: (personId: string) =>
+    ipcRenderer.invoke("db:getPersonMaxWeights", personId),
+  getPersonMaxWeight: (personId: string, exerciseId: string) =>
+    ipcRenderer.invoke("db:getPersonMaxWeight", personId, exerciseId),
+  deletePersonMaxWeight: (personId: string, exerciseId: string) =>
+    ipcRenderer.invoke("db:deletePersonMaxWeight", personId, exerciseId),
 
   // Seed database for testing
   seedDatabase: () => ipcRenderer.invoke("db:seedDatabase"),

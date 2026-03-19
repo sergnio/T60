@@ -153,3 +153,14 @@ export interface ParticipantWithSets extends SessionParticipant {
 export interface SessionWithParticipants extends WorkoutSession {
   participants: ParticipantWithSets[];
 }
+
+/** Person's max weight (1RM) for an exercise */
+export interface PersonMaxWeight {
+  id: string;
+  person_id: string;
+  exercise_id: string;
+  max_weight: number;
+  weight_unit: WeightUnit;
+  created_at: number;
+  updated_at: number;
+}

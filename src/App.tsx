@@ -1,9 +1,11 @@
+import { useState } from "react";
 import type { Exercise } from "./stories/WorkoutCardT18";
 import { WorkoutCardT18 } from "./stories/WorkoutCardT18";
 import { useActiveSessionWithParticipants } from "./hooks/queries/useWorkflowQueries.ts";
 import { useCompleteSet } from "./hooks/mutations/useSetMutations.ts";
 import type { ParticipantWithSets } from "./db/types.ts";
 import { SessionCreationForm } from "./components/SessionCreationForm.tsx";
+import { MaxWeightManager } from "./components/MaxWeightManager.tsx";
 import { WorkoutTimer } from "./components/WorkoutTimer.tsx";
 import styles from "./App.module.scss";
 
@@ -45,6 +47,7 @@ function groupByExercise(
 }
 
 const App = () => {
+  const [showMaxWeights, setShowMaxWeights] = useState(false);
   const {
     data: session,
     isLoading,
@@ -89,7 +92,21 @@ const App = () => {
   if (!session) {
     return (
       <div className={styles.fullscreenCenter}>
-        <SessionCreationForm />
+        <div className={styles.toggleContainer}>
+          <button
+            className={`${styles.toggleButton} ${!showMaxWeights ? styles.active : ""}`}
+            onClick={() => setShowMaxWeights(false)}
+          >
+            New Session
+          </button>
+          <button
+            className={`${styles.toggleButton} ${showMaxWeights ? styles.active : ""}`}
+            onClick={() => setShowMaxWeights(true)}
+          >
+            Max Weights
+          </button>
+        </div>
+        {showMaxWeights ? <MaxWeightManager /> : <SessionCreationForm />}
       </div>
     );
   }

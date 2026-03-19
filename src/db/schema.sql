@@ -80,5 +80,22 @@ CREATE TABLE IF NOT EXISTS sets (
 CREATE INDEX IF NOT EXISTS idx_sets_participant ON sets(participant_id, set_index);
 CREATE INDEX IF NOT EXISTS idx_sets_completed ON sets(completed);
 
+-- Person Max Weights (1RM tracking per exercise)
+CREATE TABLE IF NOT EXISTS person_max_weights (
+  id TEXT PRIMARY KEY,
+  person_id TEXT NOT NULL,
+  exercise_id TEXT NOT NULL,
+  max_weight REAL NOT NULL,
+  weight_unit TEXT NOT NULL CHECK(weight_unit IN ('lbs', 'kg')),
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  FOREIGN KEY (person_id) REFERENCES people(id) ON DELETE CASCADE,
+  FOREIGN KEY (exercise_id) REFERENCES exercises(id) ON DELETE CASCADE,
+  UNIQUE(person_id, exercise_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_person_max_weights_person ON person_max_weights(person_id);
+CREATE INDEX IF NOT EXISTS idx_person_max_weights_exercise ON person_max_weights(exercise_id);
+
 -- Enable foreign key constraints
 PRAGMA foreign_keys = ON;

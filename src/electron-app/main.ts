@@ -7,6 +7,7 @@ import * as sessionParticipantService from "../services/sessionParticipantServic
 import * as setService from "../services/setService.js";
 import * as workflowService from "../services/workflowService.js";
 import * as exerciseService from "../services/exerciseService.js";
+import * as maxWeightService from "../services/maxWeightService.js";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 
@@ -117,6 +118,27 @@ const registerServiceHandlers = () => {
   );
   ipcMain.handle("db:getActiveSessionWithParticipants", () =>
     workflowService.getActiveSessionWithParticipants(),
+  );
+
+  // Person Max Weights
+  ipcMain.handle(
+    "db:setPersonMaxWeight",
+    (_, personId, exerciseId, maxWeight, weightUnit) =>
+      maxWeightService.setPersonMaxWeight(
+        personId,
+        exerciseId,
+        maxWeight,
+        weightUnit,
+      ),
+  );
+  ipcMain.handle("db:getPersonMaxWeights", (_, personId) =>
+    maxWeightService.getPersonMaxWeights(personId),
+  );
+  ipcMain.handle("db:getPersonMaxWeight", (_, personId, exerciseId) =>
+    maxWeightService.getPersonMaxWeight(personId, exerciseId),
+  );
+  ipcMain.handle("db:deletePersonMaxWeight", (_, personId, exerciseId) =>
+    maxWeightService.deletePersonMaxWeight(personId, exerciseId),
   );
 
   // Seed database

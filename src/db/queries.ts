@@ -16,6 +16,8 @@ import type {
   UpdateSetInput,
   ParticipantWithSets,
   SessionWithParticipants,
+  PersonMaxWeight,
+  WeightUnit,
 } from "./types.js";
 
 // ============================================================================
@@ -619,4 +621,101 @@ export function getActiveSessionWithParticipants(): SessionWithParticipants | nu
   if (!session) return null;
 
   return getSessionWithParticipants(session.id);
+}
+
+// ============================================================================
+// PERSON MAX WEIGHTS
+// ============================================================================
+
+/**
+ * Set (upsert) a person's max weight for an exercise
+ * Creates if doesn't exist, updates if it does
+ */
+export function setPersonMaxWeight(
+  personId: string,
+  exerciseId: string,
+  maxWeight: number,
+  weightUnit: WeightUnit,
+): PersonMaxWeight {
+  const db = getDatabase();
+  const now = Date.now();
+
+  // Check if a max weight record exists
+  const existing = getPersonMaxWeight(personId, exerciseId);
+
+  if (existing) {
+    // Update existing record
+    db.prepare(
+      `
+      UPDATE person_max_weights
+      SET max_weight = ?, weight_unit = ?, updated_at = ?
+      WHERE person_id = ? AND exercise_id = ?
+    `,
+    ).run(maxWeight, weightUnit, now, personId, exerciseId);
+
+    return getPersonMaxWeight(personId, exerciseId)!;
+  } else {
+    // Create new record
+    const id = crypto.randomUUID();
+    db.prepare(
+      `
+      INSERT INTO person_max_weights (id, person_id, exercise_id, max_weight, weight_unit, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `,
+    ).run(id, personId, exerciseId, maxWeight, weightUnit, now, now);
+
+    return getPersonMaxWeight(personId, exerciseId)!;
+  }
+}
+
+/**
+ * Get all max weights for a person
+ */
+export function getPersonMaxWeights(personId: string): PersonMaxWeight[] {
+  const db = getDatabase();
+  return db
+    .prepare(
+      `
+    SELECT * FROM person_max_weights WHERE person_id = ?
+  `,
+    )
+    .all(personId) as PersonMaxWeight[];
+}
+
+/**
+ * Get a specific max weight for a person and exercise
+ */
+export function getPersonMaxWeight(
+  personId: string,
+  exerciseId: string,
+): PersonMaxWeight | null {
+  const db = getDatabase();
+  const row = db
+    .prepare(
+      `
+    SELECT * FROM person_max_weights WHERE person_id = ? AND exercise_id = ?
+  `,
+    )
+    .get(personId, exerciseId) as PersonMaxWeight | undefined;
+
+  return row || null;
+}
+
+/**
+ * Delete a person's max weight for an exercise
+ */
+export function deletePersonMaxWeight(
+  personId: string,
+  exerciseId: string,
+): boolean {
+  const db = getDatabase();
+  const result = db
+    .prepare(
+      `
+    DELETE FROM person_max_weights WHERE person_id = ? AND exercise_id = ?
+  `,
+    )
+    .run(personId, exerciseId);
+
+  return result.changes > 0;
 }
