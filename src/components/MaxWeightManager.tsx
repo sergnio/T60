@@ -77,85 +77,97 @@ export function MaxWeightManager() {
     return <div className={styles.loading}>Loading...</div>;
   }
 
+  const selectedPerson = people.find((p) => p.id === selectedPersonId);
+
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Max Weight Manager</h1>
 
-      <div className={styles.personSelector}>
-        <label htmlFor="person-select">Select Person:</label>
-        <select
-          id="person-select"
-          value={selectedPersonId}
-          onChange={(e) => handleSelectPerson(e.target.value)}
-          className={styles.select}
-        >
-          <option value="">-- Select a person --</option>
-          {people.map((person) => (
-            <option key={person.id} value={person.id}>
-              {person.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {selectedPersonId && (
-        <div className={styles.exerciseList}>
-          <h2 className={styles.subtitle}>Exercise Max Weights</h2>
-          <div className={styles.exercises}>
-            {exercises.map((exercise) => {
-              const maxWeight = maxWeights.find(
-                (mw) => mw.exercise_id === exercise.id,
-              );
-              const isEditing = editingExerciseId === exercise.id;
-
-              return (
-                <div key={exercise.id} className={styles.exerciseRow}>
-                  <div className={styles.exerciseName}>{exercise.name}</div>
-
-                  {!isEditing && (
-                    <>
-                      <div className={styles.maxWeightDisplay}>
-                        {maxWeight
-                          ? `${maxWeight.max_weight} ${maxWeight.weight_unit}`
-                          : "Not set"}
-                      </div>
-                      <div className={styles.actions}>
-                        <button
-                          onClick={() => handleStartEdit(exercise.id)}
-                          className={styles.editButton}
-                        >
-                          {maxWeight ? "Edit" : "Set"}
-                        </button>
-                        {maxWeight && (
-                          <button
-                            onClick={() => handleDelete(exercise.id)}
-                            className={styles.deleteButton}
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
-                    </>
-                  )}
-
-                  {isEditing && (
-                    <div className={styles.editFormWrapper}>
-                      <MaxWeightEditForm
-                        weight={editWeight}
-                        unit={editUnit}
-                        onWeightChange={setEditWeight}
-                        onUnitChange={setEditUnit}
-                        onSave={() => handleSaveMaxWeight(exercise.id)}
-                        onCancel={handleCancel}
-                      />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+      <div className={styles.layout}>
+        {/* Left: Person List */}
+        <div className={styles.peopleList}>
+          <h2 className={styles.sectionTitle}>People</h2>
+          <div className={styles.peopleCards}>
+            {people.map((person) => (
+              <button
+                key={person.id}
+                onClick={() => handleSelectPerson(person.id)}
+                className={`${styles.personCard} ${selectedPersonId === person.id ? styles.selected : ""}`}
+              >
+                {person.name}
+              </button>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Right: Max Weights */}
+        <div className={styles.maxWeightsSection}>
+          {selectedPersonId ? (
+            <>
+              <h2 className={styles.sectionTitle}>
+                {selectedPerson?.name}'s Max Weights
+              </h2>
+              <div className={styles.exercises}>
+                {exercises.map((exercise) => {
+                  const maxWeight = maxWeights.find(
+                    (mw) => mw.exercise_id === exercise.id,
+                  );
+                  const isEditing = editingExerciseId === exercise.id;
+
+                  return (
+                    <div key={exercise.id} className={styles.exerciseRow}>
+                      <div className={styles.exerciseName}>{exercise.name}</div>
+
+                      {!isEditing && (
+                        <>
+                          <div className={styles.maxWeightDisplay}>
+                            {maxWeight
+                              ? `${maxWeight.max_weight} ${maxWeight.weight_unit}`
+                              : "Not set"}
+                          </div>
+                          <div className={styles.actions}>
+                            <button
+                              onClick={() => handleStartEdit(exercise.id)}
+                              className={styles.editButton}
+                            >
+                              {maxWeight ? "Edit" : "Set"}
+                            </button>
+                            {maxWeight && (
+                              <button
+                                onClick={() => handleDelete(exercise.id)}
+                                className={styles.deleteButton}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+
+                      {isEditing && (
+                        <div className={styles.editFormWrapper}>
+                          <MaxWeightEditForm
+                            weight={editWeight}
+                            unit={editUnit}
+                            onWeightChange={setEditWeight}
+                            onUnitChange={setEditUnit}
+                            onSave={() => handleSaveMaxWeight(exercise.id)}
+                            onCancel={handleCancel}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            <div className={styles.emptyState}>
+              Select a person to view and edit their max weights
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

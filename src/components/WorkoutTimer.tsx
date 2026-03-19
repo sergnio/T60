@@ -55,12 +55,15 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
     if (participants.length === 0) return false;
 
     // Group participants by exercise_id
-    const exerciseGroups = participants.reduce((acc, p) => {
-      const exerciseId = p.exercise_id || "unknown";
-      if (!acc[exerciseId]) acc[exerciseId] = [];
-      acc[exerciseId].push(p);
-      return acc;
-    }, {} as Record<string, typeof participants>);
+    const exerciseGroups = participants.reduce(
+      (acc, p) => {
+        const exerciseId = p.exercise_id || "unknown";
+        if (!acc[exerciseId]) acc[exerciseId] = [];
+        acc[exerciseId].push(p);
+        return acc;
+      },
+      {} as Record<string, typeof participants>,
+    );
 
     // Check each exercise group
     for (const exerciseId in exerciseGroups) {
@@ -75,7 +78,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
       if (allCompletedCurrentSet && activeInGroup.length > 0) {
         console.log(
-          `[WorkoutTimer] All participants at exercise ${exerciseId} completed set ${justCompletedSetIndex} - triggering rotation rest`
+          `[WorkoutTimer] All participants at exercise ${exerciseId} completed set ${justCompletedSetIndex} - triggering rotation rest`,
         );
         return true;
       }
@@ -147,7 +150,9 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       setTimeRemaining(PERIOD_DURATION); // Start first workout period
     } else if (isRotationRest) {
       // ROTATION REST COMPLETE - Resume normal period with new exercise (from API)
-      console.log("[WorkoutTimer] Rotation rest complete - resuming normal period");
+      console.log(
+        "[WorkoutTimer] Rotation rest complete - resuming normal period",
+      );
       setIsRotationRest(false);
       setTimeRemaining(PERIOD_DURATION); // Start workout period at new exercise
     } else {
@@ -155,7 +160,13 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       handlePeriodComplete();
       setTimeRemaining(PERIOD_DURATION); // Reset timer for next period
     }
-  }, [timeRemaining, participants, allSetsComplete, isInitialRest, isRotationRest]);
+  }, [
+    timeRemaining,
+    participants,
+    allSetsComplete,
+    isInitialRest,
+    isRotationRest,
+  ]);
 
   // Countdown logic
   useEffect(() => {

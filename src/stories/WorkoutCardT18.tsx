@@ -123,7 +123,8 @@ export const WorkoutCardT18 = ({
   isActive = false,
   onSetComplete,
 }: WorkoutCardT18Props) => {
-  const currentSet = exercise.sets[exercise.currentSetIndex];
+  const clampedSetIndex = Math.min(exercise.currentSetIndex, exercise.sets.length - 1);
+  const currentSet = exercise.sets[clampedSetIndex];
   const currentWeight = currentSet?.weight || 0;
   const plates = calculatePlates(currentWeight);
   const barWeight = 45;

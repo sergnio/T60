@@ -323,7 +323,7 @@ export function createSessionParticipant(
     input.exercise_id || null,
     input.weight_unit,
     0,
-    input.is_active ?? false,
+    (input.is_active ?? false) ? 1 : 0,
     input.rotation_order ?? 0,
     input.status ?? "pending",
     input.started_at ?? null,
