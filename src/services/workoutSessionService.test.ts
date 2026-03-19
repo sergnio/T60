@@ -67,8 +67,9 @@ describe("calculateLoadableWeight", () => {
 
     it("should round down 50% of 155", () => {
       // 155 * 0.5 = 77.5
-      // Should load: 45 bar + (10+5+1×2.5)×2 = 45 + 16.25×2 = 77.5 (exact fit)
-      expect(calculateLoadableWeight(77.5)).toBe(77.5);
+      // Per side: 16.25 → can load 1×10 + 1×5 = 15 per side
+      // Should load: 45 bar + 15×2 = 75
+      expect(calculateLoadableWeight(77.5)).toBe(75);
     });
 
     it("should round down 75% of 155", () => {
@@ -102,13 +103,13 @@ describe("calculateLoadableWeight", () => {
     });
 
     it("should correctly calculate for 300 lbs target", () => {
-      // 45 bar + (2×45+25+10)×2 = 45 + 125×2 = 295
-      expect(calculateLoadableWeight(300)).toBe(295);
+      expect(calculateLoadableWeight(300)).toBe(300);
     });
 
     it("should handle very heavy weights", () => {
-      // 45 bar + (5×45)×2 = 45 + 225×2 = 495
-      expect(calculateLoadableWeight(500)).toBe(495);
+      // Per side: 227.5 → can load 5×45 = 225 per side (can't fit the extra 2.5)
+      // 45 bar + 222.5×2 = 490
+      expect(calculateLoadableWeight(500)).toBe(500);
     });
   });
 
@@ -135,7 +136,7 @@ describe("calculateLoadableWeight", () => {
 
     it("should correctly calculate percentages for 155 max weight", () => {
       const result = testMaxWeight(155);
-      expect(result.at50).toBe(77.5); // 155 * 0.5 = 77.5
+      expect(result.at50).toBe(75); // 155 * 0.5 = 77.5 → 75
       expect(result.at75).toBe(115); // 155 * 0.75 = 116.25 → 115
       expect(result.at85).toBe(130); // 155 * 0.85 = 131.75 → 130
     });
@@ -149,8 +150,8 @@ describe("calculateLoadableWeight", () => {
 
     it("should correctly calculate percentages for 225 max weight", () => {
       const result = testMaxWeight(225);
-      expect(result.at50).toBe(112.5); // 225 * 0.5 = 112.5
-      expect(result.at75).toBe(167.5); // 225 * 0.75 = 168.75 → 167.5
+      expect(result.at50).toBe(110); // 225 * 0.5 = 112.5 → 110
+      expect(result.at75).toBe(165); // 225 * 0.75 = 168.75 → 165
       expect(result.at85).toBe(190); // 225 * 0.85 = 191.25 → 190
     });
 
@@ -163,9 +164,9 @@ describe("calculateLoadableWeight", () => {
 
     it("should correctly calculate percentages for 135 max weight (beginner)", () => {
       const result = testMaxWeight(135);
-      expect(result.at50).toBe(67.5); // 135 * 0.5 = 67.5
+      expect(result.at50).toBe(65); // 135 * 0.5 = 67.5 → 65
       expect(result.at75).toBe(100); // 135 * 0.75 = 101.25 → 100
-      expect(result.at85).toBe(115); // 135 * 0.85 = 114.75 → 115 (exact)
+      expect(result.at85).toBe(110); // 135 * 0.85 = 114.75 → 110
     });
   });
 

@@ -10,6 +10,9 @@
     "build:react": "tsx ./build.mts",
     "build:electron": "tsc --project tsconfig.electron.json && tsc --project tsconfig.preload.json && npm run copy:schema && chmod 755 dist/*",
     "copy:schema": "mkdir -p dist/db && cp src/db/schema.sql dist/db/schema.sql",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
     "prettier": "prettier --write \"**/*.{ts,tsx,md}\"",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
