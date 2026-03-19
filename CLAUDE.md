@@ -5,4 +5,5 @@
   - API work, use the API project
   - DB work, use the DB project
 - IMPORTANT!! Any time a new feature ticket or bug ticket is created, CREATE A SEPARATE TICKET FOR TESTING.
+  - Link both tickets to each other, so we know if one person picks on up, they need to pick up the other
   - For now, until the MVP is done, we will retroactively add testing tickets for any existing features that don't have them
