@@ -177,7 +177,11 @@ export async function createRotationSession(
           // - Assign first maxConcurrent participants to exercise 0 (active)
           // - Next maxConcurrent participants to exercise 1 (active), etc.
           const exerciseSlot = Math.floor(participantIndex / maxConcurrent);
-          const isInitiallyActive = rotationOrder === exerciseSlot;
+          const positionWithinSlot = participantIndex % maxConcurrent;
+          const isAssignedToExercise = rotationOrder === exerciseSlot;
+          // Only the first person at each exercise starts as is_active
+          // (the second person rests until it's their turn)
+          const isFirstAtExercise = isAssignedToExercise && positionWithinSlot === 0;
 
           const participantRecordId = crypto.randomUUID();
 
@@ -194,16 +198,16 @@ export async function createRotationSession(
             exerciseId,
             input.weightUnit,
             0, // current_set_index
-            isInitiallyActive ? 1 : 0, // is_active
+            isFirstAtExercise ? 1 : 0, // is_active - only first person at exercise
             rotationOrder,
-            isInitiallyActive ? "active" : "pending",
-            isInitiallyActive ? now : null,
+            isAssignedToExercise ? "active" : "pending", // status - both partners are 'active'
+            isAssignedToExercise ? now : null,
             now,
             now,
           );
 
-          // 4. Create sets only for initially active participants
-          if (isInitiallyActive) {
+          // 4. Create sets for all participants assigned to this exercise
+          if (isAssignedToExercise) {
             const setsConfig = generateSetsConfig(personId, exerciseId);
             for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
               const setId = crypto.randomUUID();

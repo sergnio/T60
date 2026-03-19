@@ -163,6 +163,9 @@ export function createWorkoutSession(
     ).run(sessionId, input.name || null, now, now, now);
 
     // Create participants for each station
+    // Track how many participants per exercise to set is_active correctly
+    const exerciseParticipantCount = new Map<string, number>();
+
     for (const station of input.stations) {
       const exercise = getExercise(station.exerciseId);
       if (!exercise) {
@@ -170,12 +173,18 @@ export function createWorkoutSession(
       }
 
       for (const personId of station.participantIds) {
+        const count = exerciseParticipantCount.get(station.exerciseId) ?? 0;
+        const isFirstAtExercise = count === 0;
+        exerciseParticipantCount.set(station.exerciseId, count + 1);
+
         const participant = createSessionParticipant({
           session_id: sessionId,
           person_id: personId,
           exercise_name: exercise.name,
           exercise_id: exercise.id,
           weight_unit: input.weightUnit,
+          is_active: isFirstAtExercise,
+          status: "active",
         });
 
         // Sets must be provided by the service layer

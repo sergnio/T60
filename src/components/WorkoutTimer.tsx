@@ -34,20 +34,10 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
     }
   }, [allSetsComplete]);
 
-  // Handle rest timer completion - activate even-indexed participants
+  // Handle rest timer completion - is_active is already set correctly by createRotationSession
   const handleRestTimerComplete = () => {
-    // REST TIMER COMPLETE - Activate participants at even indices (0, 2, 4, ...)
-    participants.forEach((participant, index) => {
-      const shouldBeActive = index % 2 === 0; // Even indices are active
-
-      updateParticipant.mutate({
-        id: participant.id,
-        input: { is_active: shouldBeActive },
-      });
-    });
-
-    setIsInitialRest(false); // Exit rest phase
-    setHasInitialized(true); // Mark initialization complete
+    setIsInitialRest(false);
+    setHasInitialized(true);
   };
 
   // Check if all participants at an exercise have completed the same set (optimistic rotation detection)
@@ -120,19 +110,23 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       return; // Don't toggle participants - API will handle rotation
     }
 
-    // Toggle all participants' is_active flags (normal behavior)
-    participants.forEach((participant) => {
-      console.log(
-        "gonna toggle!",
-        participant.person.name,
-        "currently active:",
-        participant.is_active,
-      );
-      updateParticipant.mutate({
-        id: participant.id,
-        input: { is_active: !participant.is_active },
+    // Toggle is_active within each exercise group independently
+    const exerciseGroups = new Map<string, typeof participants>();
+    for (const p of participants) {
+      const key = p.exercise_id || "unknown";
+      if (!exerciseGroups.has(key)) exerciseGroups.set(key, []);
+      exerciseGroups.get(key)!.push(p);
+    }
+
+    for (const group of exerciseGroups.values()) {
+      const activeInGroup = group.filter((p) => p.status === "active");
+      activeInGroup.forEach((participant) => {
+        updateParticipant.mutate({
+          id: participant.id,
+          input: { is_active: !participant.is_active },
+        });
       });
-    });
+    }
   };
 
   // Handle period end when timer reaches 0
