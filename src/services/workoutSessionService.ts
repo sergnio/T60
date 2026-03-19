@@ -9,7 +9,52 @@ import type {
   CreateWorkoutSessionInput,
   UpdateWorkoutSessionInput,
   SessionWithParticipants,
+  SetConfig,
+  ExerciseStation,
 } from "../db/types.js";
+
+/**
+ * Rounds a weight up to the nearest 2.5 lbs/kg
+ */
+function roundUpToNearest2Point5(weight: number): number {
+  return Math.ceil(weight / 2.5) * 2.5;
+}
+
+/**
+ * Calculates set weights based on max weight percentage
+ * Set 1: 50%, Set 2: 75%, Sets 3-5: 85%
+ */
+function calculateSetWeights(maxWeight: number): number[] {
+  const percentages = [0.5, 0.75, 0.85, 0.85, 0.85];
+  return percentages.map(percentage =>
+    roundUpToNearest2Point5(maxWeight * percentage)
+  );
+}
+
+/**
+ * Generates sets config based on max weight
+ * Throws if max weight is not found
+ */
+function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
+  const maxWeightRecord = queries.getPersonMaxWeight(personId, exerciseId);
+
+  if (!maxWeightRecord) {
+    throw new Error(`MAX_WEIGHT_NOT_FOUND:${personId}:${exerciseId}`);
+  }
+
+  const weights = calculateSetWeights(maxWeightRecord.max_weight);
+  console.log(
+    `[sessionService] Using max weight ${maxWeightRecord.max_weight} ${maxWeightRecord.weight_unit} for person ${personId}, exercise ${exerciseId}`,
+  );
+
+  return [
+    { weight: weights[0], reps: 10 },
+    { weight: weights[1], reps: 5 },
+    { weight: weights[2], reps: 5 },
+    { weight: weights[3], reps: 5 },
+    { weight: weights[4], reps: 5 },
+  ];
+}
 
 export async function createWorkoutSession(
   input: CreateWorkoutSessionInput,
@@ -50,11 +95,44 @@ export async function createWorkoutSession(
       };
     }
 
-    const session = queries.createWorkoutSession(input);
+    // Process stations: for stations without sets, calculate based on max weights per participant
+    // If max weight is missing, this will throw an error that the UI can catch
+    const processedStations: ExerciseStation[] = [];
+
+    for (const station of input.stations) {
+      for (const participantId of station.participantIds) {
+        processedStations.push({
+          exerciseId: station.exerciseId,
+          participantIds: [participantId],
+          sets: station.sets ?? generateSetsConfig(participantId, station.exerciseId),
+        });
+      }
+    }
+
+    const processedInput: CreateWorkoutSessionInput = {
+      ...input,
+      stations: processedStations,
+    };
+
+    const session = queries.createWorkoutSession(processedInput);
     console.log("[sessionService:createWorkoutSession] Created session:", session.id);
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:createWorkoutSession] Failed:", error);
+
+    // Check if it's a max weight not found error
+    if (error instanceof Error && error.message.startsWith("MAX_WEIGHT_NOT_FOUND:")) {
+      const [, personId, exerciseId] = error.message.split(":");
+      return {
+        success: false,
+        error: {
+          code: ErrorCode.VALIDATION_ERROR,
+          message: "Max weight not found for participant",
+          details: { personId, exerciseId },
+        },
+      };
+    }
+
     return {
       success: false,
       error: {

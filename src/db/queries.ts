@@ -179,21 +179,17 @@ export function createWorkoutSession(
           weight_unit: input.weightUnit,
         });
 
-        // Create sets for each participant (dynamic config or default 5-set scheme)
-        const setsConfig = station.sets ?? [
-          { weight: 0, reps: 10 },
-          { weight: 0, reps: 5 },
-          { weight: 0, reps: 5 },
-          { weight: 0, reps: 5 },
-          { weight: 0, reps: 5 },
-        ];
+        // Sets must be provided by the service layer
+        if (!station.sets) {
+          throw new Error("Sets configuration is required for each station");
+        }
 
-        for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
+        for (let setIndex = 0; setIndex < station.sets.length; setIndex++) {
           createSet({
             participant_id: participant.id,
             set_index: setIndex,
-            weight: setsConfig[setIndex].weight,
-            reps: setsConfig[setIndex].reps,
+            weight: station.sets[setIndex].weight,
+            reps: station.sets[setIndex].reps,
           });
         }
       }
