@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ParticipantWithSets } from "../db/types";
 import { useCompleteSet } from "../hooks/mutations/useSetMutations";
 import { useUpdateSessionParticipant } from "../hooks/mutations/useSessionParticipantMutations";
@@ -79,28 +79,41 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
   // Handle regular period completion - toggle participants and complete sets
   const handlePeriodComplete = () => {
-    // Complete sets for all currently active participants
-    const activeParticipants = participants.filter((p) => p.is_active);
+    console.log("[handlePeriodComplete] === PERIOD COMPLETE ===");
+    console.log("[handlePeriodComplete] All participants state:", participants.map(p => ({
+      name: p.person.name,
+      is_active: p.is_active,
+      status: p.status,
+      current_set_index: p.current_set_index,
+      exercise_id: p.exercise_id,
+      completedSets: p.sets.filter(s => s.completed).length,
+      totalSets: p.sets.length,
+    })));
+
+    // Complete sets for all currently active participants (must also be at an active exercise)
+    const activeParticipants = participants.filter((p) => p.is_active && p.status === "active");
     const firstParticipant = activeParticipants[0];
     const currentSetIndex = firstParticipant?.current_set_index ?? 0;
+
+    console.log("[handlePeriodComplete] Active participants (is_active=true):", activeParticipants.map(p => p.person.name));
+    console.log("[handlePeriodComplete] currentSetIndex:", currentSetIndex);
 
     activeParticipants.forEach((participant) => {
       const currentSet = participant.sets[participant.current_set_index];
       if (currentSet && !currentSet.completed) {
-        console.log("----");
-        console.log(
-          "completing set for",
-          participant.person.name,
-          "set index:",
-          participant.current_set_index,
-        );
-        console.log("----");
+        console.log(`[handlePeriodComplete] Completing set for ${participant.person.name}, set index: ${participant.current_set_index}`);
         completeSet.mutate(currentSet.id);
+      } else {
+        console.log(`[handlePeriodComplete] SKIPPING ${participant.person.name} - set already completed or doesn't exist`, {
+          currentSet: !!currentSet,
+          completed: currentSet?.completed,
+        });
       }
     });
 
     // Check if this will trigger a rotation (optimistic)
     const willRotate = checkForRotation(currentSetIndex);
+    console.log("[handlePeriodComplete] willRotate:", willRotate);
 
     if (willRotate) {
       // Start rotation rest timer immediately (optimistic)
@@ -118,8 +131,13 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       exerciseGroups.get(key)!.push(p);
     }
 
-    for (const group of exerciseGroups.values()) {
+    for (const [exerciseId, group] of exerciseGroups.entries()) {
       const activeInGroup = group.filter((p) => p.status === "active");
+      console.log(`[handlePeriodComplete] Exercise ${exerciseId}: toggling ${activeInGroup.length} participants:`, activeInGroup.map(p => ({
+        name: p.person.name,
+        is_active: p.is_active,
+        willBecome: !p.is_active,
+      })));
       activeInGroup.forEach((participant) => {
         updateParticipant.mutate({
           id: participant.id,
@@ -129,10 +147,19 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
     }
   };
 
+  // Guard against re-entry: when mutations resolve and `participants` changes,
+  // the effect re-fires with timeRemaining still 0. This ref prevents double-handling.
+  const hasHandledZero = useRef(false);
+
   // Handle period end when timer reaches 0
   useEffect(() => {
-    console.log("getting in here");
-    if (timeRemaining > 0) return;
+    if (timeRemaining > 0) {
+      hasHandledZero.current = false;
+      return;
+    }
+    if (hasHandledZero.current) return;
+    hasHandledZero.current = true;
+
     if (allSetsComplete) {
       setIsRunning(false);
       return;
