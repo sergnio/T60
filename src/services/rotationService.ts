@@ -6,21 +6,12 @@ import { getDatabase } from "../db/init.js";
 import type { ServiceResult } from "./types/serviceResults.js";
 import { ErrorCode } from "./types/serviceResults.js";
 import type {
+  CreateRotationSessionInput,
   SessionParticipant,
-  WeightUnit,
   SetConfig,
 } from "../db/types.js";
 
-/**
- * Input for creating a rotation session
- */
-export interface CreateRotationSessionInput {
-  name?: string;
-  weightUnit: WeightUnit;
-  participantIds: string[]; // List of person IDs
-  exerciseIds: string[]; // List of exercise IDs in rotation order
-  maxConcurrentPerExercise?: number; // Default: 2
-}
+export type { CreateRotationSessionInput };
 
 /**
  * Session assignments showing who is on which exercise

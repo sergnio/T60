@@ -185,3 +185,14 @@ export interface RotationConfig {
   created_at: number;
   updated_at: number;
 }
+
+/**
+ * Input for creating a rotation session
+ */
+export interface CreateRotationSessionInput {
+  name?: string;
+  weightUnit: WeightUnit;
+  participantIds: string[]; // List of person IDs
+  exerciseIds: string[]; // List of exercise IDs in rotation order
+  maxConcurrentPerExercise?: number; // Default: 2
+}

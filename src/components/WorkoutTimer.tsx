@@ -14,6 +14,7 @@ const PERIOD_DURATION = 90; // Regular workout period duration
 
 export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
   const [isInitialRest, setIsInitialRest] = useState(true); // True during the initial 10-second rest timer
+  const [isRotationRest, setIsRotationRest] = useState(false); // True during rotation rest timer
   const [hasInitialized, setHasInitialized] = useState(false); // Tracks if participants have been initialized
   const [timeRemaining, setTimeRemaining] = useState(REST_TIMER_DURATION);
   const [isRunning, setIsRunning] = useState(true);
@@ -49,10 +50,47 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
     setHasInitialized(true); // Mark initialization complete
   };
 
+  // Check if all participants at an exercise have completed the same set (optimistic rotation detection)
+  const checkForRotation = (justCompletedSetIndex: number) => {
+    if (participants.length === 0) return false;
+
+    // Group participants by exercise_id
+    const exerciseGroups = participants.reduce((acc, p) => {
+      const exerciseId = p.exercise_id || "unknown";
+      if (!acc[exerciseId]) acc[exerciseId] = [];
+      acc[exerciseId].push(p);
+      return acc;
+    }, {} as Record<string, typeof participants>);
+
+    // Check each exercise group
+    for (const exerciseId in exerciseGroups) {
+      const group = exerciseGroups[exerciseId];
+      const activeInGroup = group.filter((p) => p.status === "active");
+
+      // Check if all active participants in this group completed the current set
+      const allCompletedCurrentSet = activeInGroup.every((p) => {
+        const set = p.sets[justCompletedSetIndex];
+        return set?.completed;
+      });
+
+      if (allCompletedCurrentSet && activeInGroup.length > 0) {
+        console.log(
+          `[WorkoutTimer] All participants at exercise ${exerciseId} completed set ${justCompletedSetIndex} - triggering rotation rest`
+        );
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   // Handle regular period completion - toggle participants and complete sets
   const handlePeriodComplete = () => {
     // Complete sets for all currently active participants
     const activeParticipants = participants.filter((p) => p.is_active);
+    const firstParticipant = activeParticipants[0];
+    const currentSetIndex = firstParticipant?.current_set_index ?? 0;
+
     activeParticipants.forEach((participant) => {
       const currentSet = participant.sets[participant.current_set_index];
       if (currentSet && !currentSet.completed) {
@@ -68,7 +106,18 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       }
     });
 
-    // Toggle all participants' is_active flags
+    // Check if this will trigger a rotation (optimistic)
+    const willRotate = checkForRotation(currentSetIndex);
+
+    if (willRotate) {
+      // Start rotation rest timer immediately (optimistic)
+      console.log("[WorkoutTimer] Starting rotation rest timer");
+      setIsRotationRest(true);
+      setTimeRemaining(REST_TIMER_DURATION);
+      return; // Don't toggle participants - API will handle rotation
+    }
+
+    // Toggle all participants' is_active flags (normal behavior)
     participants.forEach((participant) => {
       console.log(
         "gonna toggle!",

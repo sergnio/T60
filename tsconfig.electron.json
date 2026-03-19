@@ -11,6 +11,6 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": false
   },
-  "include": ["src/electron-app", "src/db"],
+  "include": ["src/electron-app", "src/db", "src/services"],
   "exclude": ["node_modules"]
 }

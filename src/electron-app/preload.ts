@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 import type {
   CreateExerciseInput,
   CreatePersonInput,
+  CreateRotationSessionInput,
   CreateSessionParticipantInput,
   CreateSetInput,
   CreateWorkoutSessionInput,
@@ -11,7 +12,6 @@ import type {
   UpdateWorkoutSessionInput,
   WeightUnit,
 } from "../db/types.js";
-import type { CreateRotationSessionInput } from "../services/rotationService.js";
 
 /**
  * Database API exposed to the renderer process
