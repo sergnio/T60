@@ -9,8 +9,8 @@ interface WorkoutTimerProps {
   participants: ParticipantWithSets[];
 }
 
-const REST_TIMER_DURATION = 90; // Initial rest period in seconds - CLEARLY A REST TIMER
-const PERIOD_DURATION = 90; // Regular workout period duration
+const REST_TIMER_DURATION = 7; // Initial rest period in seconds - CLEARLY A REST TIMER
+const PERIOD_DURATION = 5; // Regular workout period duration
 
 export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
   const [isInitialRest, setIsInitialRest] = useState(true); // True during the initial 10-second rest timer
@@ -145,17 +145,17 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       // REST TIMER COMPLETE - Initialize active participants
       handleRestTimerComplete();
       setTimeRemaining(PERIOD_DURATION); // Start first workout period
+    } else if (isRotationRest) {
+      // ROTATION REST COMPLETE - Resume normal period with new exercise (from API)
+      console.log("[WorkoutTimer] Rotation rest complete - resuming normal period");
+      setIsRotationRest(false);
+      setTimeRemaining(PERIOD_DURATION); // Start workout period at new exercise
     } else {
       // Regular period complete - toggle and start next period
       handlePeriodComplete();
       setTimeRemaining(PERIOD_DURATION); // Reset timer for next period
     }
-  }, [
-    timeRemaining,
-    participants,
-    allSetsComplete,
-    isInitialRest,
-  ]);
+  }, [timeRemaining, participants, allSetsComplete, isInitialRest, isRotationRest]);
 
   // Countdown logic
   useEffect(() => {
@@ -170,7 +170,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
   return (
     <div className={styles.timerContainer}>
-      {isInitialRest && (
+      {(isInitialRest || isRotationRest) && (
         <div className={styles.restIndicator}>REST TIMER</div>
       )}
       <div className={styles.timeDisplay}>{formatTime(timeRemaining)}</div>
