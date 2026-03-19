@@ -9,8 +9,8 @@ interface WorkoutTimerProps {
   participants: ParticipantWithSets[];
 }
 
-const REST_TIMER_DURATION = 10; // Initial rest period in seconds - CLEARLY A REST TIMER
-const PERIOD_DURATION = 5; // Regular workout period duration
+const REST_TIMER_DURATION = 90; // Initial rest period in seconds - CLEARLY A REST TIMER
+const PERIOD_DURATION = 90; // Regular workout period duration
 
 export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
   const [isInitialRest, setIsInitialRest] = useState(true); // True during the initial 10-second rest timer
