@@ -14,20 +14,46 @@ import type {
 } from "../db/types.js";
 
 /**
- * Rounds a weight up to the nearest 2.5 lbs/kg
+ * Calculates the actual loadable weight using available plates
+ * Uses a greedy algorithm to fit plates (45, 25, 10, 5, 2.5) per side
+ * Returns the total weight that can actually be loaded on the bar
+ * @internal Exported for testing purposes
  */
-function roundUpToNearest2Point5(weight: number): number {
-  return Math.ceil(weight / 2.5) * 2.5;
+export function calculateLoadableWeight(targetWeight: number): number {
+  const barWeight = 45;
+  const plateWeights = [45, 25, 10, 5, 2.5];
+
+  // Weight to load on the bar (excluding bar itself)
+  const weightToLoad = Math.max(0, targetWeight - barWeight);
+
+  // Weight per side
+  const perSide = weightToLoad / 2;
+
+  // Greedily fit plates per side
+  let loadedPerSide = 0;
+  let remaining = perSide;
+
+  for (const plateWeight of plateWeights) {
+    const count = Math.floor(remaining / plateWeight);
+    if (count > 0) {
+      loadedPerSide += count * plateWeight;
+      remaining -= count * plateWeight;
+    }
+  }
+
+  // Total weight = bar + both sides
+  return barWeight + (loadedPerSide * 2);
 }
 
 /**
  * Calculates set weights based on max weight percentage
  * Set 1: 50%, Set 2: 75%, Sets 3-5: 85%
+ * Ensures weights can actually be loaded with available plates
  */
 function calculateSetWeights(maxWeight: number): number[] {
   const percentages = [0.5, 0.75, 0.85, 0.85, 0.85];
   return percentages.map(percentage =>
-    roundUpToNearest2Point5(maxWeight * percentage)
+    calculateLoadableWeight(maxWeight * percentage)
   );
 }
 
