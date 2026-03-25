@@ -80,34 +80,49 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
   // Handle regular period completion - toggle participants and complete sets
   const handlePeriodComplete = () => {
     console.log("[handlePeriodComplete] === PERIOD COMPLETE ===");
-    console.log("[handlePeriodComplete] All participants state:", participants.map(p => ({
-      name: p.person.name,
-      is_active: p.is_active,
-      status: p.status,
-      current_set_index: p.current_set_index,
-      exercise_id: p.exercise_id,
-      completedSets: p.sets.filter(s => s.completed).length,
-      totalSets: p.sets.length,
-    })));
+    console.log(
+      "[handlePeriodComplete] All participants state:",
+      participants.map((p) => ({
+        name: p.person.name,
+        is_active: p.is_active,
+        status: p.status,
+        current_set_index: p.current_set_index,
+        exercise_id: p.exercise_id,
+        completedSets: p.sets.filter((s) => s.completed).length,
+        totalSets: p.sets.length,
+      })),
+    );
 
     // Complete sets for all currently active participants (must also be at an active exercise)
-    const activeParticipants = participants.filter((p) => p.is_active && p.status === "active");
+    const activeParticipants = participants.filter(
+      (p) => p.is_active && p.status === "active",
+    );
     const firstParticipant = activeParticipants[0];
     const currentSetIndex = firstParticipant?.current_set_index ?? 0;
 
-    console.log("[handlePeriodComplete] Active participants (is_active=true):", activeParticipants.map(p => p.person.name));
+    console.log(
+      "[handlePeriodComplete] Active participants (is_active=true):",
+      activeParticipants.map((p) => p.person.name),
+    );
     console.log("[handlePeriodComplete] currentSetIndex:", currentSetIndex);
 
     activeParticipants.forEach((participant) => {
       const currentSet = participant.sets[participant.current_set_index];
       if (currentSet && !currentSet.completed) {
-        console.log(`[handlePeriodComplete] Completing set for ${participant.person.name}, set index: ${participant.current_set_index}`);
+        console.log(
+          `COMPLETE SET!!! ${participant.person.name}, set index: ${participant.current_set_index}`,
+        );
         completeSet.mutate(currentSet.id);
+        console.log("----------------------------------");
       } else {
-        console.log(`[handlePeriodComplete] SKIPPING ${participant.person.name} - set already completed or doesn't exist`, {
-          currentSet: !!currentSet,
-          completed: currentSet?.completed,
-        });
+        console.log(
+          `[handlePeriodComplete] SKIPPING ${participant.person.name} - set already completed or doesn't exist`,
+          {
+            currentSet: !!currentSet,
+            completed: currentSet?.completed,
+          },
+        );
+        console.log("----------------------------------");
       }
     });
 
@@ -131,13 +146,28 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       exerciseGroups.get(key)!.push(p);
     }
 
+    console.log(
+      "[handlePeriodComplete] ALL PARTICIPANTS IN GROUPS:",
+      Array.from(exerciseGroups.entries()).map(([exerciseId, group]) => ({
+        exerciseId,
+        participants: group.map((p) => ({
+          name: p.person.name,
+          status: p.status,
+          is_active: p.is_active,
+        })),
+      })),
+    );
+
     for (const [exerciseId, group] of exerciseGroups.entries()) {
       const activeInGroup = group.filter((p) => p.status === "active");
-      console.log(`[handlePeriodComplete] Exercise ${exerciseId}: toggling ${activeInGroup.length} participants:`, activeInGroup.map(p => ({
-        name: p.person.name,
-        is_active: p.is_active,
-        willBecome: !p.is_active,
-      })));
+      console.log(
+        `[handlePeriodComplete] Exercise ${exerciseId}: toggling ${activeInGroup.length} participants:`,
+        activeInGroup.map((p) => ({
+          name: p.person.name,
+          is_active: p.is_active,
+          willBecome: !p.is_active,
+        })),
+      );
       activeInGroup.forEach((participant) => {
         updateParticipant.mutate({
           id: participant.id,
@@ -153,31 +183,56 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
   // Handle period end when timer reaches 0
   useEffect(() => {
+    console.debug("[WorkoutTimer] useEffect triggered", {
+      timeRemaining,
+      hasHandledZero: hasHandledZero.current,
+      allSetsComplete,
+      isInitialRest,
+      isRotationRest,
+      isRunning,
+    });
+
     if (timeRemaining > 0) {
+      console.debug("[WorkoutTimer] Timer still running...");
       hasHandledZero.current = false;
       return;
     }
-    if (hasHandledZero.current) return;
+
+    if (hasHandledZero.current) {
+      console.log(
+        "[WorkoutTimer] Already handled zero, skipping to prevent double-handling",
+      );
+      return;
+    }
+
+    console.log("[WorkoutTimer] Timer reached 0!!");
     hasHandledZero.current = true;
 
     if (allSetsComplete) {
+      console.log("[WorkoutTimer] All sets complete - stopping timer");
       setIsRunning(false);
       return;
     }
 
     if (isInitialRest) {
       // REST TIMER COMPLETE - Initialize active participants
+      console.log(
+        "[WorkoutTimer] Initial rest timer complete - STARTING FIRST WORKOUT PERIOD!!!",
+      );
       handleRestTimerComplete();
       setTimeRemaining(PERIOD_DURATION); // Start first workout period
     } else if (isRotationRest) {
       // ROTATION REST COMPLETE - Resume normal period with new exercise (from API)
       console.log(
-        "[WorkoutTimer] Rotation rest complete - resuming normal period",
+        "[WorkoutTimer] Rotation rest complete - resuming normal period with new exercise",
       );
       setIsRotationRest(false);
       setTimeRemaining(PERIOD_DURATION); // Start workout period at new exercise
     } else {
       // Regular period complete - toggle and start next period
+      console.log(
+        "[WorkoutTimer] Regular period complete - calling handlePeriodComplete",
+      );
       handlePeriodComplete();
       setTimeRemaining(PERIOD_DURATION); // Reset timer for next period
     }
