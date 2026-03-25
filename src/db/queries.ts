@@ -28,13 +28,15 @@ import type {
 export function createExercise(input: CreateExerciseInput): Exercise {
   const db = getDatabase();
 
-  const result = db.prepare(
-    `
+  const result = db
+    .prepare(
+      `
     INSERT INTO exercises (name)
     VALUES (?)
     RETURNING id
   `,
-  ).get(input.name) as { id: string };
+    )
+    .get(input.name) as { id: string };
 
   return getExercise(result.id)!;
 }
@@ -70,13 +72,15 @@ export function getAllExercises(): Exercise[] {
 export function createPerson(input: CreatePersonInput): Person {
   const db = getDatabase();
 
-  const result = db.prepare(
-    `
+  const result = db
+    .prepare(
+      `
     INSERT INTO people (name)
     VALUES (?)
     RETURNING id
   `,
-  ).get(input.name) as { id: string };
+    )
+    .get(input.name) as { id: string };
 
   return getPerson(result.id)!;
 }
@@ -545,6 +549,7 @@ export function completeSet(id: string): Set | null {
       `[db:completeSet] Participant ${set.participant_id} current_set_index BEFORE: ${participantBefore?.current_set_index}`,
     );
 
+    // todo - srn I think this needs to go
     // 2. Complete the set
     db.prepare(
       `
@@ -760,7 +765,14 @@ export function createRotationConfig(
     INSERT INTO rotation_configs (id, session_id, exercise_order, max_concurrent_per_exercise, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?)
   `,
-  ).run(id, sessionId, JSON.stringify(exerciseIds), maxConcurrentPerExercise, now, now);
+  ).run(
+    id,
+    sessionId,
+    JSON.stringify(exerciseIds),
+    maxConcurrentPerExercise,
+    now,
+    now,
+  );
 }
 
 /**
@@ -923,12 +935,14 @@ export function completeExerciseAndRotate(
 
     if (activeCount < maxConcurrent) {
       // Check if anyone is already is_active at the next exercise
-      const isActiveCount = (db
-        .prepare(
-          `SELECT COUNT(*) as count FROM session_participants
+      const isActiveCount = (
+        db
+          .prepare(
+            `SELECT COUNT(*) as count FROM session_participants
            WHERE session_id = ? AND exercise_id = ? AND status = 'active' AND is_active = 1`,
-        )
-        .get(current.session_id, next.exercise_id!) as { count: number }).count;
+          )
+          .get(current.session_id, next.exercise_id!) as { count: number }
+      ).count;
 
       // Activate next exercise — first person to arrive gets is_active
       updateSessionParticipant(next.id, {

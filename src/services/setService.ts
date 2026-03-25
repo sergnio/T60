@@ -124,22 +124,21 @@ export async function completeSet(
           (p) => p.exercise_id === participant.exercise_id && p.status === "active"
         );
 
-        // Check if all participants at this exercise have completed the current set
-        const allCompletedCurrentSet = participantsAtExercise.every((p) => {
+        // Check if all participants at this exercise have completed ALL their sets
+        const allCompletedAllSets = participantsAtExercise.every((p) => {
           const sets = queries.getSetsByParticipant(p.id);
-          const currentSet = sets[set.set_index];
-          return currentSet?.completed;
+          return sets.length > 0 && sets.every((s) => s.completed);
         });
 
         console.log(
-          `[setService:completeSet] All participants at exercise completed set ${set.set_index}:`,
-          allCompletedCurrentSet
+          `[setService:completeSet] All participants at exercise completed ALL sets:`,
+          allCompletedAllSets
         );
 
-        // If all participants completed the current set, rotate everyone to next exercise
-        if (allCompletedCurrentSet) {
+        // Only rotate when ALL sets are done, not just the current one
+        if (allCompletedAllSets) {
           console.log(
-            `[setService:completeSet] Triggering rotation for all participants at exercise ${participant.exercise_id}`
+            `[setService:completeSet] All sets complete - triggering rotation for all participants at exercise ${participant.exercise_id}`
           );
           const rotationResult = await rotationService.rotateAllParticipantsAtExercise(
             participant.session_id,
