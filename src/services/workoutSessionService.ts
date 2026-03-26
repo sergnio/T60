@@ -121,28 +121,80 @@ export async function createWorkoutSession(
       };
     }
 
-    // Process stations: for stations without sets, calculate based on max weights per participant
-    // If max weight is missing, this will throw an error that the UI can catch
-    const processedStations: ExerciseStation[] = [];
+    // Detect rotation scenario: multiple exercises means rotation workout
+    const allExerciseIds = [...new Set(input.stations.map(s => s.exerciseId))];
+    const isRotationWorkout = allExerciseIds.length > 1;
 
-    for (const station of input.stations) {
-      for (const participantId of station.participantIds) {
-        processedStations.push({
-          exerciseId: station.exerciseId,
-          participantIds: [participantId],
-          sets: station.sets ?? generateSetsConfig(participantId, station.exerciseId),
-        });
+    if (isRotationWorkout) {
+      console.log("[sessionService:createWorkoutSession] Detected rotation workout - creating ALL participant records for ALL exercises");
+
+      // For rotation workouts, create participant records for ALL people at ALL exercises
+      // Extract all unique participants and exercises
+      const allParticipantIds = [...new Set(input.stations.flatMap(s => s.participantIds))];
+
+      // Build a map of which exercise each participant starts at
+      const participantStartingExercise = new Map<string, string>();
+      for (const station of input.stations) {
+        for (const participantId of station.participantIds) {
+          if (!participantStartingExercise.has(participantId)) {
+            participantStartingExercise.set(participantId, station.exerciseId);
+          }
+        }
       }
+
+      // Create processed stations for ALL combinations (person × exercise)
+      const processedStations: ExerciseStation[] = [];
+
+      for (const participantId of allParticipantIds) {
+        const startingExerciseId = participantStartingExercise.get(participantId)!;
+
+        for (const exerciseId of allExerciseIds) {
+          processedStations.push({
+            exerciseId,
+            participantIds: [participantId],
+            sets: generateSetsConfig(participantId, exerciseId),
+            // Mark if this is the starting exercise for this participant
+            isStartingExercise: exerciseId === startingExerciseId,
+          });
+        }
+      }
+
+      const processedInput: CreateWorkoutSessionInput = {
+        ...input,
+        stations: processedStations,
+      };
+
+      const session = queries.createWorkoutSession(processedInput);
+
+      // Create rotation config
+      queries.createRotationConfig(session.id, allExerciseIds, 2);
+
+      console.log("[sessionService:createWorkoutSession] Created rotation session:", session.id,
+        "with", allParticipantIds.length, "participants and", allExerciseIds.length, "exercises");
+      return { success: true, data: session };
+    } else {
+      // Non-rotation workout: process normally (one exercise, multiple participants)
+      const processedStations: ExerciseStation[] = [];
+
+      for (const station of input.stations) {
+        for (const participantId of station.participantIds) {
+          processedStations.push({
+            exerciseId: station.exerciseId,
+            participantIds: [participantId],
+            sets: station.sets ?? generateSetsConfig(participantId, station.exerciseId),
+          });
+        }
+      }
+
+      const processedInput: CreateWorkoutSessionInput = {
+        ...input,
+        stations: processedStations,
+      };
+
+      const session = queries.createWorkoutSession(processedInput);
+      console.log("[sessionService:createWorkoutSession] Created session:", session.id);
+      return { success: true, data: session };
     }
-
-    const processedInput: CreateWorkoutSessionInput = {
-      ...input,
-      stations: processedStations,
-    };
-
-    const session = queries.createWorkoutSession(processedInput);
-    console.log("[sessionService:createWorkoutSession] Created session:", session.id);
-    return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:createWorkoutSession] Failed:", error);
 

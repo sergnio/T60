@@ -111,14 +111,15 @@ const App = () => {
     );
   }
 
-  // Sort participants by ID to ensure consistent ordering for even/odd activation
-  const sortedParticipants = [...session.participants].sort((a, b) =>
+  // Filter to only active participants and sort by ID for consistent ordering
+  const activeParticipants = session.participants.filter(p => p.status === "active");
+  const sortedParticipants = [...activeParticipants].sort((a, b) =>
     a.id.localeCompare(b.id),
   );
   console.log("------");
   console.log("------");
   console.log("------");
-  console.log("sortedParticipants", sortedParticipants);
+  console.log("sortedParticipants (active only)", sortedParticipants);
   console.log("------");
   console.log("------");
   console.log("------");
@@ -127,8 +128,8 @@ const App = () => {
 
   return (
     <div className={styles.container}>
-      {/* Timer */}
-      <WorkoutTimer participants={sortedParticipants} />
+      {/* Timer - pass ALL participants (including pending) for rotation detection */}
+      <WorkoutTimer participants={session.participants} />
       {/* Session name */}
       {session.name && (
         <div className={styles.sessionTitle}>{session.name}</div>

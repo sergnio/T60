@@ -94,6 +94,7 @@ export interface ExerciseStation {
   exerciseId: string;
   participantIds: string[]; // 1-2 people
   sets?: SetConfig[]; // If omitted, falls back to default 5-set scheme
+  isStartingExercise?: boolean; // For rotation: marks if this is where participant starts
 }
 
 export interface CreateWorkoutSessionInput {

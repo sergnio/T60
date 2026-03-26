@@ -166,43 +166,100 @@ export function createWorkoutSession(
     `,
     ).run(sessionId, input.name || null, now, now, now);
 
-    // Create participants for each station
-    // Track how many participants per exercise to set is_active correctly
-    const exerciseParticipantCount = new Map<string, number>();
+    // Detect rotation workout: if any station has isStartingExercise defined
+    const isRotationWorkout = input.stations.some(s => s.isStartingExercise !== undefined);
 
-    for (const station of input.stations) {
-      const exercise = getExercise(station.exerciseId);
-      if (!exercise) {
-        throw new Error(`Exercise not found: ${station.exerciseId}`);
-      }
+    if (isRotationWorkout) {
+      console.log("[db:createWorkoutSession] Creating rotation workout");
 
-      for (const personId of station.participantIds) {
-        const count = exerciseParticipantCount.get(station.exerciseId) ?? 0;
-        const isFirstAtExercise = count === 0;
-        exerciseParticipantCount.set(station.exerciseId, count + 1);
+      // Build rotation order from unique exercises
+      const exerciseIds = [...new Set(input.stations.map(s => s.exerciseId))];
+      const exerciseIndexMap = new Map(exerciseIds.map((id, idx) => [id, idx]));
 
-        const participant = createSessionParticipant({
-          session_id: sessionId,
-          person_id: personId,
-          exercise_name: exercise.name,
-          exercise_id: exercise.id,
-          weight_unit: input.weightUnit,
-          is_active: isFirstAtExercise,
-          status: "active",
-        });
+      // Track how many participants per exercise to set is_active correctly
+      const exerciseParticipantCount = new Map<string, number>();
 
-        // Sets must be provided by the service layer
-        if (!station.sets) {
-          throw new Error("Sets configuration is required for each station");
+      for (const station of input.stations) {
+        const exercise = getExercise(station.exerciseId);
+        if (!exercise) {
+          throw new Error(`Exercise not found: ${station.exerciseId}`);
         }
 
-        for (let setIndex = 0; setIndex < station.sets.length; setIndex++) {
-          createSet({
-            participant_id: participant.id,
-            set_index: setIndex,
-            weight: station.sets[setIndex].weight,
-            reps: station.sets[setIndex].reps,
+        for (const personId of station.participantIds) {
+          const count = exerciseParticipantCount.get(station.exerciseId) ?? 0;
+          const isFirstAtExercise = count === 0 && station.isStartingExercise;
+          exerciseParticipantCount.set(station.exerciseId, count + 1);
+
+          const rotationOrder = exerciseIndexMap.get(station.exerciseId) ?? 0;
+          const status = station.isStartingExercise ? "active" : "pending";
+
+          const participant = createSessionParticipant({
+            session_id: sessionId,
+            person_id: personId,
+            exercise_name: exercise.name,
+            exercise_id: exercise.id,
+            weight_unit: input.weightUnit,
+            is_active: isFirstAtExercise,
+            status: status,
+            rotation_order: rotationOrder,
+            started_at: station.isStartingExercise ? now : undefined,
           });
+
+          // Sets must be provided by the service layer
+          if (!station.sets) {
+            throw new Error("Sets configuration is required for each station");
+          }
+
+          // Create sets for ALL participant records (both active and pending)
+          // This ensures all 15 sets per person are created upfront for rotation workouts
+          for (let setIndex = 0; setIndex < station.sets.length; setIndex++) {
+            createSet({
+              participant_id: participant.id,
+              set_index: setIndex,
+              weight: station.sets[setIndex].weight,
+              reps: station.sets[setIndex].reps,
+            });
+          }
+        }
+      }
+    } else {
+      // Non-rotation workout: original logic
+      const exerciseParticipantCount = new Map<string, number>();
+
+      for (const station of input.stations) {
+        const exercise = getExercise(station.exerciseId);
+        if (!exercise) {
+          throw new Error(`Exercise not found: ${station.exerciseId}`);
+        }
+
+        for (const personId of station.participantIds) {
+          const count = exerciseParticipantCount.get(station.exerciseId) ?? 0;
+          const isFirstAtExercise = count === 0;
+          exerciseParticipantCount.set(station.exerciseId, count + 1);
+
+          const participant = createSessionParticipant({
+            session_id: sessionId,
+            person_id: personId,
+            exercise_name: exercise.name,
+            exercise_id: exercise.id,
+            weight_unit: input.weightUnit,
+            is_active: isFirstAtExercise,
+            status: "active",
+          });
+
+          // Sets must be provided by the service layer
+          if (!station.sets) {
+            throw new Error("Sets configuration is required for each station");
+          }
+
+          for (let setIndex = 0; setIndex < station.sets.length; setIndex++) {
+            createSet({
+              participant_id: participant.id,
+              set_index: setIndex,
+              weight: station.sets[setIndex].weight,
+              reps: station.sets[setIndex].reps,
+            });
+          }
         }
       }
     }
