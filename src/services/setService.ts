@@ -114,35 +114,29 @@ export async function completeSet(
       set ? "success" : "not found",
     );
 
-    // Check if all participants at this exercise have completed the current set
+    // Check if ALL active participants across ALL exercises have completed ALL their sets
     if (set) {
       const participant = queries.getSessionParticipant(set.participant_id);
-      if (participant && participant.exercise_id) {
-        // Get all active participants at this exercise
+      if (participant) {
         const allParticipants = queries.getSessionParticipants(participant.session_id);
-        const participantsAtExercise = allParticipants.filter(
-          (p) => p.exercise_id === participant.exercise_id && p.status === "active"
-        );
+        const activeParticipants = allParticipants.filter((p) => p.status === "active");
 
-        // Check if all participants at this exercise have completed ALL their sets
-        const allCompletedAllSets = participantsAtExercise.every((p) => {
+        const allCompletedAllSets = activeParticipants.every((p) => {
           const sets = queries.getSetsByParticipant(p.id);
           return sets.length > 0 && sets.every((s) => s.completed);
         });
 
         console.log(
-          `[setService:completeSet] All participants at exercise completed ALL sets:`,
+          `[setService:completeSet] All active participants in session completed ALL sets:`,
           allCompletedAllSets
         );
 
-        // Only rotate when ALL sets are done, not just the current one
         if (allCompletedAllSets) {
           console.log(
-            `[setService:completeSet] All sets complete - triggering rotation for all participants at exercise ${participant.exercise_id}`
+            `[setService:completeSet] All sets complete - triggering session-wide rotation`
           );
-          const rotationResult = await rotationService.rotateAllParticipantsAtExercise(
-            participant.session_id,
-            participant.exercise_id
+          const rotationResult = await rotationService.rotateAllParticipantsInSession(
+            participant.session_id
           );
 
           if (rotationResult.success && rotationResult.data.rotated) {

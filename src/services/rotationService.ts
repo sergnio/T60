@@ -162,11 +162,15 @@ export async function createRotationSession(
       // Track which participant is assigned to which exercise initially
       let participantIndex = 0;
 
+      console.log(`[rotationService] Creating participant records for ${input.participantIds.length} people across ${input.exerciseIds.length} exercises`);
+
       for (const personId of input.participantIds) {
         const person = queries.getPerson(personId);
         if (!person) {
           throw new Error(`Person not found: ${personId}`);
         }
+
+        console.log(`[rotationService] Creating records for person: ${person.name} (participantIndex=${participantIndex})`);
 
         // Create a participant record for each exercise in rotation
         for (let rotationOrder = 0; rotationOrder < input.exerciseIds.length; rotationOrder++) {
@@ -184,6 +188,8 @@ export async function createRotationSession(
           const isFirstAtExercise = isAssignedToExercise && positionWithinSlot === 0;
 
           const participantRecordId = crypto.randomUUID();
+
+          console.log(`[rotationService]   - Exercise: ${exercise.name}, rotationOrder=${rotationOrder}, status=${isAssignedToExercise ? "active" : "pending"}, is_active=${isFirstAtExercise}`);
 
           getDatabase().prepare(`
             INSERT INTO session_participants
@@ -206,8 +212,11 @@ export async function createRotationSession(
             now,
           );
 
+          console.log(`[rotationService]     ✓ Participant record created`);
+
           // 4. Create sets for all participants assigned to this exercise
           if (isAssignedToExercise) {
+            console.log(`[rotationService]     Creating ${5} sets for active assignment`);
             const setsConfig = generateSetsConfig(personId, exerciseId);
             for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
               const setId = crypto.randomUUID();
@@ -225,11 +234,16 @@ export async function createRotationSession(
                 now,
               );
             }
+            console.log(`[rotationService]     ✓ ${setsConfig.length} sets created`);
+          } else {
+            console.log(`[rotationService]     Skipping set creation for pending exercise (will create during rotation)`);
           }
         }
 
         participantIndex++;
       }
+
+      console.log(`[rotationService] ✓ All participant records created successfully`);
     })();
 
     console.log(`[rotationService] Created rotation session: ${sessionId}`);
@@ -385,6 +399,122 @@ export async function rotateAllParticipantsAtExercise(
       error: {
         code: ErrorCode.DATABASE_ERROR,
         message: "Failed to rotate all participants at exercise",
+        details: error,
+      },
+    };
+  }
+}
+
+/**
+ * Finds the next exercise in rotation for a person, respecting rotation order with wrap-around.
+ * E.g., if current is rotation_order=1, picks pending with order 2 first, then wraps to 0.
+ */
+function getNextInRotation(
+  sessionId: string,
+  personId: string,
+  currentRotationOrder: number,
+): SessionParticipant | null {
+  const incomplete = queries.getIncompleteExercises(sessionId, personId);
+  const pending = incomplete.filter((p) => p.status === "pending");
+
+  if (pending.length === 0) return null;
+
+  // First: next pending after current rotation_order
+  const next = pending.find((p) => p.rotation_order > currentRotationOrder);
+  // Wrap around if none found
+  return next || pending[0];
+}
+
+/**
+ * Rotates ALL active participants across all exercises in a session simultaneously.
+ * Called when every active participant at every exercise has completed all their sets.
+ */
+export async function rotateAllParticipantsInSession(
+  sessionId: string,
+): Promise<ServiceResult<{ rotated: boolean; participantCount: number }>> {
+  try {
+    const allParticipants = queries.getSessionParticipants(sessionId);
+    const activeParticipants = allParticipants.filter((p) => p.status === "active");
+
+    if (activeParticipants.length === 0) {
+      return { success: true, data: { rotated: false, participantCount: 0 } };
+    }
+
+    console.log(
+      `[rotationService] Rotating ALL ${activeParticipants.length} participants in session ${sessionId}`
+    );
+
+    const db = getDatabase();
+    db.transaction(() => {
+      const now = Date.now();
+
+      // Phase 1: Mark all current exercises as completed
+      for (const participant of activeParticipants) {
+        queries.updateSessionParticipant(participant.id, {
+          status: "completed",
+          completed_at: now,
+        });
+      }
+
+      // Phase 2: Activate next exercises with correct rotation order
+      for (const participant of activeParticipants) {
+        const next = getNextInRotation(
+          sessionId,
+          participant.person_id,
+          participant.rotation_order,
+        );
+
+        if (!next) {
+          console.log(
+            `[rotationService] No more exercises for ${participant.person_id}`
+          );
+          continue;
+        }
+
+        // Check if anyone is already is_active at the next exercise
+        const isActiveCount = (
+          db
+            .prepare(
+              `SELECT COUNT(*) as count FROM session_participants
+               WHERE session_id = ? AND exercise_id = ? AND status = 'active' AND is_active = 1`,
+            )
+            .get(sessionId, next.exercise_id!) as { count: number }
+        ).count;
+
+        queries.updateSessionParticipant(next.id, {
+          status: "active",
+          started_at: now,
+          is_active: isActiveCount === 0,
+        });
+
+        // Create sets for the new exercise
+        const setsConfig = generateSetsConfig(next.person_id, next.exercise_id!);
+        for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
+          queries.createSet({
+            participant_id: next.id,
+            set_index: setIndex,
+            weight: setsConfig[setIndex].weight,
+            reps: setsConfig[setIndex].reps,
+          });
+        }
+
+        console.log(
+          `[rotationService] Rotated ${participant.person_id} from ${participant.exercise_name} to ${next.exercise_name}`
+        );
+      }
+    })();
+
+    return {
+      success: true,
+      data: { rotated: true, participantCount: activeParticipants.length },
+    };
+  } catch (error) {
+    console.error("[rotationService] Failed to rotate all participants in session:", error);
+    return {
+      success: false,
+      error: {
+        code: ErrorCode.DATABASE_ERROR,
+        message: "Failed to rotate all participants in session",
         details: error,
       },
     };

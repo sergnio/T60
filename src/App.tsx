@@ -113,8 +113,15 @@ const App = () => {
 
   // Sort participants by ID to ensure consistent ordering for even/odd activation
   const sortedParticipants = [...session.participants].sort((a, b) =>
-    a.id.localeCompare(b.id)
+    a.id.localeCompare(b.id),
   );
+  console.log("------");
+  console.log("------");
+  console.log("------");
+  console.log("sortedParticipants", sortedParticipants);
+  console.log("------");
+  console.log("------");
+  console.log("------");
 
   const stations = groupByExercise(sortedParticipants);
 
