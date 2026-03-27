@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAllPeople } from "../hooks/queries/usePeople.ts";
 import { useAllExercises } from "../hooks/queries/useExercises.ts";
 import { useCreateWorkoutSession } from "../hooks/mutations/useWorkoutSessionMutations.ts";
@@ -40,8 +40,7 @@ export function SessionCreationForm() {
   const selectedExerciseIds = new Set(stations.map((s) => s.exerciseId));
 
   const isValid =
-    stations.length > 0 &&
-    stations.every((s) => s.participantIds.size >= 1);
+    stations.length > 0 && stations.some((s) => s.participantIds.size >= 1);
 
   const handleSelectExercise = (exerciseId: string, exerciseName: string) => {
     if (selectedExerciseIds.has(exerciseId)) {
@@ -151,7 +150,7 @@ export function SessionCreationForm() {
             setShowMissingMaxWeightsPopup(true);
           }
         },
-      }
+      },
     );
   };
 
@@ -262,7 +261,9 @@ export function SessionCreationForm() {
                               person.id,
                             )
                           }
-                          disabled={isAssignedElsewhere || createSession.isPending}
+                          disabled={
+                            isAssignedElsewhere || createSession.isPending
+                          }
                         >
                           {person.name}
                         </button>

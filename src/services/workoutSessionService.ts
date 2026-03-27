@@ -42,7 +42,7 @@ export function calculateLoadableWeight(targetWeight: number): number {
   }
 
   // Total weight = bar + both sides
-  return barWeight + (loadedPerSide * 2);
+  return barWeight + loadedPerSide * 2;
 }
 
 /**
@@ -52,8 +52,8 @@ export function calculateLoadableWeight(targetWeight: number): number {
  */
 function calculateSetWeights(maxWeight: number): number[] {
   const percentages = [0.5, 0.75, 0.85, 0.85, 0.85];
-  return percentages.map(percentage =>
-    calculateLoadableWeight(maxWeight * percentage)
+  return percentages.map((percentage) =>
+    calculateLoadableWeight(maxWeight * percentage),
   );
 }
 
@@ -85,11 +85,19 @@ function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
 export async function createWorkoutSession(
   input: CreateWorkoutSessionInput,
 ): Promise<ServiceResult<SessionWithParticipants>> {
-  console.log("[sessionService:createWorkoutSession] Creating session:", input.name, "with", input.stations?.length, "stations");
+  console.log(
+    "[sessionService:createWorkoutSession] Creating session:",
+    input.name,
+    "with",
+    input.stations?.length,
+    "stations",
+  );
   try {
     // Validate input
     if (!input.stations || input.stations.length === 0) {
-      console.warn("[sessionService:createWorkoutSession] Validation failed: no stations");
+      console.warn(
+        "[sessionService:createWorkoutSession] Validation failed: no stations",
+      );
       return {
         success: false,
         error: {
@@ -99,19 +107,12 @@ export async function createWorkoutSession(
       };
     }
 
-    if (input.stations.some((s) => !s.participantIds || s.participantIds.length === 0)) {
-      console.warn("[sessionService:createWorkoutSession] Validation failed: station missing participants");
-      return {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Each station must have at least one participant",
-        },
-      };
-    }
-
-    if (input.stations.some((s) => s.sets !== undefined && s.sets.length === 0)) {
-      console.warn("[sessionService:createWorkoutSession] Validation failed: station sets array is empty");
+    if (
+      input.stations.some((s) => s.sets !== undefined && s.sets.length === 0)
+    ) {
+      console.warn(
+        "[sessionService:createWorkoutSession] Validation failed: station sets array is empty",
+      );
       return {
         success: false,
         error: {
@@ -122,15 +123,21 @@ export async function createWorkoutSession(
     }
 
     // Detect rotation scenario: multiple exercises means rotation workout
-    const allExerciseIds = [...new Set(input.stations.map(s => s.exerciseId))];
+    const allExerciseIds = [
+      ...new Set(input.stations.map((s) => s.exerciseId)),
+    ];
     const isRotationWorkout = allExerciseIds.length > 1;
 
     if (isRotationWorkout) {
-      console.log("[sessionService:createWorkoutSession] Detected rotation workout - creating ALL participant records for ALL exercises");
+      console.log(
+        "[sessionService:createWorkoutSession] Detected rotation workout - creating ALL participant records for ALL exercises",
+      );
 
       // For rotation workouts, create participant records for ALL people at ALL exercises
       // Extract all unique participants and exercises
-      const allParticipantIds = [...new Set(input.stations.flatMap(s => s.participantIds))];
+      const allParticipantIds = [
+        ...new Set(input.stations.flatMap((s) => s.participantIds)),
+      ];
 
       // Build a map of which exercise each participant starts at
       const participantStartingExercise = new Map<string, string>();
@@ -146,7 +153,8 @@ export async function createWorkoutSession(
       const processedStations: ExerciseStation[] = [];
 
       for (const participantId of allParticipantIds) {
-        const startingExerciseId = participantStartingExercise.get(participantId)!;
+        const startingExerciseId =
+          participantStartingExercise.get(participantId)!;
 
         for (const exerciseId of allExerciseIds) {
           processedStations.push({
@@ -169,8 +177,15 @@ export async function createWorkoutSession(
       // Create rotation config
       queries.createRotationConfig(session.id, allExerciseIds, 2);
 
-      console.log("[sessionService:createWorkoutSession] Created rotation session:", session.id,
-        "with", allParticipantIds.length, "participants and", allExerciseIds.length, "exercises");
+      console.log(
+        "[sessionService:createWorkoutSession] Created rotation session:",
+        session.id,
+        "with",
+        allParticipantIds.length,
+        "participants and",
+        allExerciseIds.length,
+        "exercises",
+      );
       return { success: true, data: session };
     } else {
       // Non-rotation workout: process normally (one exercise, multiple participants)
@@ -181,7 +196,9 @@ export async function createWorkoutSession(
           processedStations.push({
             exerciseId: station.exerciseId,
             participantIds: [participantId],
-            sets: station.sets ?? generateSetsConfig(participantId, station.exerciseId),
+            sets:
+              station.sets ??
+              generateSetsConfig(participantId, station.exerciseId),
           });
         }
       }
@@ -192,14 +209,20 @@ export async function createWorkoutSession(
       };
 
       const session = queries.createWorkoutSession(processedInput);
-      console.log("[sessionService:createWorkoutSession] Created session:", session.id);
+      console.log(
+        "[sessionService:createWorkoutSession] Created session:",
+        session.id,
+      );
       return { success: true, data: session };
     }
   } catch (error) {
     console.error("[sessionService:createWorkoutSession] Failed:", error);
 
     // Check if it's a max weight not found error
-    if (error instanceof Error && error.message.startsWith("MAX_WEIGHT_NOT_FOUND:")) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith("MAX_WEIGHT_NOT_FOUND:")
+    ) {
       const [, personId, exerciseId] = error.message.split(":");
       return {
         success: false,
@@ -228,7 +251,10 @@ export async function getWorkoutSession(
   console.log("[sessionService:getWorkoutSession] Fetching session:", id);
   try {
     const session = queries.getWorkoutSession(id);
-    console.log("[sessionService:getWorkoutSession] Result:", session ? "found" : "not found");
+    console.log(
+      "[sessionService:getWorkoutSession] Result:",
+      session ? "found" : "not found",
+    );
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:getWorkoutSession] Failed:", error);
@@ -246,10 +272,15 @@ export async function getWorkoutSession(
 export async function getActiveWorkoutSession(): Promise<
   ServiceResult<WorkoutSession | null>
 > {
-  console.log("[sessionService:getActiveWorkoutSession] Fetching active session");
+  console.log(
+    "[sessionService:getActiveWorkoutSession] Fetching active session",
+  );
   try {
     const session = queries.getActiveWorkoutSession();
-    console.log("[sessionService:getActiveWorkoutSession] Result:", session ? `found (${session.id})` : "none active");
+    console.log(
+      "[sessionService:getActiveWorkoutSession] Result:",
+      session ? `found (${session.id})` : "none active",
+    );
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:getActiveWorkoutSession] Failed:", error);
@@ -270,7 +301,11 @@ export async function getAllWorkoutSessions(): Promise<
   console.log("[sessionService:getAllWorkoutSessions] Fetching all sessions");
   try {
     const sessions = queries.getAllWorkoutSessions();
-    console.log("[sessionService:getAllWorkoutSessions] Found", sessions.length, "sessions");
+    console.log(
+      "[sessionService:getAllWorkoutSessions] Found",
+      sessions.length,
+      "sessions",
+    );
     return { success: true, data: sessions };
   } catch (error) {
     console.error("[sessionService:getAllWorkoutSessions] Failed:", error);
@@ -289,10 +324,18 @@ export async function updateWorkoutSession(
   id: string,
   input: UpdateWorkoutSessionInput,
 ): Promise<ServiceResult<WorkoutSession | null>> {
-  console.log("[sessionService:updateWorkoutSession] Updating session:", id, "with:", JSON.stringify(input));
+  console.log(
+    "[sessionService:updateWorkoutSession] Updating session:",
+    id,
+    "with:",
+    JSON.stringify(input),
+  );
   try {
     const session = queries.updateWorkoutSession(id, input);
-    console.log("[sessionService:updateWorkoutSession] Updated:", session ? "success" : "not found");
+    console.log(
+      "[sessionService:updateWorkoutSession] Updated:",
+      session ? "success" : "not found",
+    );
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:updateWorkoutSession] Failed:", error);
@@ -313,7 +356,10 @@ export async function endWorkoutSession(
   console.log("[sessionService:endWorkoutSession] Ending session:", id);
   try {
     const session = queries.endWorkoutSession(id);
-    console.log("[sessionService:endWorkoutSession] Ended:", session ? "success" : "not found");
+    console.log(
+      "[sessionService:endWorkoutSession] Ended:",
+      session ? "success" : "not found",
+    );
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:endWorkoutSession] Failed:", error);
