@@ -135,14 +135,25 @@ export async function completeSet(
           console.log(
             `[setService:completeSet] All sets complete - triggering session-wide rotation`
           );
-          const rotationResult = await rotationService.rotateAllParticipantsInSession(
-            participant.session_id
-          );
 
-          if (rotationResult.success && rotationResult.data.rotated) {
-            console.log(
-              `[setService:completeSet] Rotated ${rotationResult.data.participantCount} participants`
+          try {
+            const rotationResult = await rotationService.rotateAllParticipantsInSession(
+              participant.session_id
             );
+
+            if (rotationResult.success && rotationResult.data.rotated) {
+              console.log(
+                `[setService:completeSet] Rotated ${rotationResult.data.participantCount} participants`
+              );
+            } else if (!rotationResult.success) {
+              console.error(
+                `[setService:completeSet] Rotation failed:`,
+                rotationResult.error
+              );
+            }
+          } catch (error) {
+            console.error(`[setService:completeSet] Rotation error:`, error);
+            // Don't re-throw - set completion should still succeed
           }
         }
       }

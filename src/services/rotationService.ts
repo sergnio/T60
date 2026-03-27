@@ -487,15 +487,28 @@ export async function rotateAllParticipantsInSession(
           is_active: isActiveCount === 0,
         });
 
-        // Create sets for the new exercise
-        const setsConfig = generateSetsConfig(next.person_id, next.exercise_id!);
-        for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
-          queries.createSet({
-            participant_id: next.id,
-            set_index: setIndex,
-            weight: setsConfig[setIndex].weight,
-            reps: setsConfig[setIndex].reps,
-          });
+        // Before creating sets, check if they already exist
+        const existingSets = queries.getSetsByParticipant(next.id);
+
+        if (existingSets.length === 0) {
+          // Sets don't exist yet - create them
+          console.log(
+            `[rotationService] Creating ${5} sets for ${next.exercise_name}`
+          );
+          const setsConfig = generateSetsConfig(next.person_id, next.exercise_id!);
+          for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
+            queries.createSet({
+              participant_id: next.id,
+              set_index: setIndex,
+              weight: setsConfig[setIndex].weight,
+              reps: setsConfig[setIndex].reps,
+            });
+          }
+        } else {
+          // Sets already exist - skip creation
+          console.log(
+            `[rotationService] Sets already exist for ${next.exercise_name} (${existingSets.length} sets), skipping creation`
+          );
         }
 
         console.log(
