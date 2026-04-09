@@ -169,6 +169,11 @@ export function createWorkoutSession(
     // Detect rotation workout: if any station has isStartingExercise defined
     const isRotationWorkout = input.stations.some(s => s.isStartingExercise !== undefined);
 
+    // Collect created participant IDs (with status) per exercise for the is_active correction pass.
+    // We need status so we only assign is_active=true among active-status participants —
+    // pending participants in rotation workouts must never get is_active=true.
+    const participantsByExercise = new Map<string, { id: string; status: string }[]>();
+
     if (isRotationWorkout) {
       console.log("[db:createWorkoutSession] Creating rotation workout");
 
@@ -204,6 +209,11 @@ export function createWorkoutSession(
             rotation_order: rotationOrder,
             started_at: station.isStartingExercise ? now : undefined,
           });
+
+          // Track participant for the is_active correction pass below
+          const entries = participantsByExercise.get(station.exerciseId) ?? [];
+          entries.push({ id: participant.id, status });
+          participantsByExercise.set(station.exerciseId, entries);
 
           // Sets must be provided by the service layer
           if (!station.sets) {
@@ -247,6 +257,11 @@ export function createWorkoutSession(
             status: "active",
           });
 
+          // Track participant for the is_active correction pass below
+          const entries = participantsByExercise.get(station.exerciseId) ?? [];
+          entries.push({ id: participant.id, status: "active" });
+          participantsByExercise.set(station.exerciseId, entries);
+
           // Sets must be provided by the service layer
           if (!station.sets) {
             throw new Error("Sets configuration is required for each station");
@@ -261,6 +276,32 @@ export function createWorkoutSession(
             });
           }
         }
+      }
+    }
+
+    // IMPORTANT: Display sort and is_active assignment both use id.localeCompare
+    // to ensure the visually-top participant is the active one. See TONY-80.
+    // Correction pass: re-assign is_active so the participant whose UUID sorts
+    // first (matching the UI display order) is the active one per exercise.
+    // Only active-status participants are eligible — pending participants in
+    // rotation workouts must always have is_active=false.
+    for (const [, entries] of participantsByExercise) {
+      const activeEntries = entries.filter(e => e.status === "active");
+      const pendingEntries = entries.filter(e => e.status !== "active");
+
+      // Among active-status participants, the first by UUID sort gets is_active=true
+      const sortedActive = activeEntries.map(e => e.id).sort((a, b) => a.localeCompare(b));
+      for (let i = 0; i < sortedActive.length; i++) {
+        db.prepare(
+          `UPDATE session_participants SET is_active = ?, updated_at = ? WHERE id = ?`,
+        ).run(i === 0 ? 1 : 0, Date.now(), sortedActive[i]);
+      }
+
+      // Pending participants are never active
+      for (const entry of pendingEntries) {
+        db.prepare(
+          `UPDATE session_participants SET is_active = 0, updated_at = ? WHERE id = ?`,
+        ).run(Date.now(), entry.id);
       }
     }
 

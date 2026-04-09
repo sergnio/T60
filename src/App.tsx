@@ -112,18 +112,12 @@ const App = () => {
   }
 
   // Filter to only active participants and sort by ID for consistent ordering
+  // IMPORTANT: Display sort and is_active assignment both use id.localeCompare
+  // to ensure the visually-top participant is the active one. See TONY-80.
   const activeParticipants = session.participants.filter(p => p.status === "active");
   const sortedParticipants = [...activeParticipants].sort((a, b) =>
     a.id.localeCompare(b.id),
   );
-  console.log("------");
-  console.log("------");
-  console.log("------");
-  console.log("sortedParticipants (active only)", sortedParticipants);
-  console.log("------");
-  console.log("------");
-  console.log("------");
-
   const stations = groupByExercise(sortedParticipants);
 
   return (
