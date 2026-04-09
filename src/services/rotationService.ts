@@ -243,6 +243,11 @@ export async function createRotationSession(
         participantIndex++;
       }
 
+      // Correct is_active to match display sort order at all exercises (TONY-80)
+      for (const exerciseId of input.exerciseIds) {
+        queries.correctIsActiveForExercise(sessionId, exerciseId);
+      }
+
       console.log(`[rotationService] ✓ All participant records created successfully`);
     })();
 
@@ -457,6 +462,7 @@ export async function rotateAllParticipantsInSession(
       }
 
       // Phase 2: Activate next exercises with correct rotation order
+      const activatedExerciseIds = new Set<string>();
       for (const participant of activeParticipants) {
         const next = getNextInRotation(
           sessionId,
@@ -471,21 +477,13 @@ export async function rotateAllParticipantsInSession(
           continue;
         }
 
-        // Check if anyone is already is_active at the next exercise
-        const isActiveCount = (
-          db
-            .prepare(
-              `SELECT COUNT(*) as count FROM session_participants
-               WHERE session_id = ? AND exercise_id = ? AND status = 'active' AND is_active = 1`,
-            )
-            .get(sessionId, next.exercise_id!) as { count: number }
-        ).count;
-
         queries.updateSessionParticipant(next.id, {
           status: "active",
           started_at: now,
-          is_active: isActiveCount === 0,
         });
+        if (next.exercise_id) {
+          activatedExerciseIds.add(next.exercise_id);
+        }
 
         // Before creating sets, check if they already exist
         const existingSets = queries.getSetsByParticipant(next.id);
@@ -514,6 +512,11 @@ export async function rotateAllParticipantsInSession(
         console.log(
           `[rotationService] Rotated ${participant.person_id} from ${participant.exercise_name} to ${next.exercise_name}`
         );
+      }
+
+      // Phase 3: Correct is_active to match display sort order at all activated exercises (TONY-80)
+      for (const exerciseId of activatedExerciseIds) {
+        queries.correctIsActiveForExercise(sessionId, exerciseId);
       }
     })();
 

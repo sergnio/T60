@@ -169,10 +169,8 @@ export function createWorkoutSession(
     // Detect rotation workout: if any station has isStartingExercise defined
     const isRotationWorkout = input.stations.some(s => s.isStartingExercise !== undefined);
 
-    // Collect created participant IDs (with status) per exercise for the is_active correction pass.
-    // We need status so we only assign is_active=true among active-status participants —
-    // pending participants in rotation workouts must never get is_active=true.
-    const participantsByExercise = new Map<string, { id: string; status: string }[]>();
+    // Collect exercise IDs for the is_active correction pass at the end
+    const allExerciseIds = new Set<string>();
 
     if (isRotationWorkout) {
       console.log("[db:createWorkoutSession] Creating rotation workout");
@@ -210,10 +208,7 @@ export function createWorkoutSession(
             started_at: station.isStartingExercise ? now : undefined,
           });
 
-          // Track participant for the is_active correction pass below
-          const entries = participantsByExercise.get(station.exerciseId) ?? [];
-          entries.push({ id: participant.id, status });
-          participantsByExercise.set(station.exerciseId, entries);
+          allExerciseIds.add(station.exerciseId);
 
           // Sets must be provided by the service layer
           if (!station.sets) {
@@ -257,10 +252,7 @@ export function createWorkoutSession(
             status: "active",
           });
 
-          // Track participant for the is_active correction pass below
-          const entries = participantsByExercise.get(station.exerciseId) ?? [];
-          entries.push({ id: participant.id, status: "active" });
-          participantsByExercise.set(station.exerciseId, entries);
+          allExerciseIds.add(station.exerciseId);
 
           // Sets must be provided by the service layer
           if (!station.sets) {
@@ -279,30 +271,9 @@ export function createWorkoutSession(
       }
     }
 
-    // IMPORTANT: Display sort and is_active assignment both use id.localeCompare
-    // to ensure the visually-top participant is the active one. See TONY-80.
-    // Correction pass: re-assign is_active so the participant whose UUID sorts
-    // first (matching the UI display order) is the active one per exercise.
-    // Only active-status participants are eligible — pending participants in
-    // rotation workouts must always have is_active=false.
-    for (const [, entries] of participantsByExercise) {
-      const activeEntries = entries.filter(e => e.status === "active");
-      const pendingEntries = entries.filter(e => e.status !== "active");
-
-      // Among active-status participants, the first by UUID sort gets is_active=true
-      const sortedActive = activeEntries.map(e => e.id).sort((a, b) => a.localeCompare(b));
-      for (let i = 0; i < sortedActive.length; i++) {
-        db.prepare(
-          `UPDATE session_participants SET is_active = ?, updated_at = ? WHERE id = ?`,
-        ).run(i === 0 ? 1 : 0, Date.now(), sortedActive[i]);
-      }
-
-      // Pending participants are never active
-      for (const entry of pendingEntries) {
-        db.prepare(
-          `UPDATE session_participants SET is_active = 0, updated_at = ? WHERE id = ?`,
-        ).run(Date.now(), entry.id);
-      }
+    // Correction pass: ensure is_active aligns with display sort order (TONY-80)
+    for (const exerciseId of allExerciseIds) {
+      correctIsActiveForExercise(sessionId, exerciseId);
     }
 
     return getSessionWithParticipants(sessionId)!;
@@ -456,6 +427,46 @@ export function getSessionParticipant(id: string): SessionParticipant | null {
     .get(id) as SessionParticipant | undefined;
 
   return row || null;
+}
+
+/**
+ * Ensures that within a given exercise, the active-status participant whose UUID
+ * sorts first (via localeCompare) has is_active=true, and all others have is_active=false.
+ * This keeps the is_active flag aligned with the UI display order (which sorts by UUID).
+ *
+ * IMPORTANT: Display sort and is_active assignment both use id.localeCompare
+ * to ensure the visually-top participant is the active one. See TONY-80.
+ *
+ * Call this after any operation that changes which participants are active at an exercise
+ * (session creation, rotation, etc.).
+ */
+export function correctIsActiveForExercise(
+  sessionId: string,
+  exerciseId: string,
+): void {
+  const db = getDatabase();
+  const now = Date.now();
+
+  // Get all active-status participants at this exercise
+  const activeParticipants = db
+    .prepare(
+      `SELECT id FROM session_participants
+       WHERE session_id = ? AND exercise_id = ? AND status = 'active'
+       ORDER BY id ASC`,
+    )
+    .all(sessionId, exerciseId) as { id: string }[];
+
+  if (activeParticipants.length === 0) return;
+
+  // Sort by UUID (localeCompare) to match display order
+  const sortedIds = activeParticipants.map(p => p.id).sort((a, b) => a.localeCompare(b));
+
+  // First gets is_active=true, rest get is_active=false
+  for (let i = 0; i < sortedIds.length; i++) {
+    db.prepare(
+      `UPDATE session_participants SET is_active = ?, updated_at = ? WHERE id = ?`,
+    ).run(i === 0 ? 1 : 0, now, sortedIds[i]);
+  }
 }
 
 export function getSessionParticipants(
@@ -1032,22 +1043,12 @@ export function completeExerciseAndRotate(
     );
 
     if (activeCount < maxConcurrent) {
-      // Check if anyone is already is_active at the next exercise
-      const isActiveCount = (
-        db
-          .prepare(
-            `SELECT COUNT(*) as count FROM session_participants
-           WHERE session_id = ? AND exercise_id = ? AND status = 'active' AND is_active = 1`,
-          )
-          .get(current.session_id, next.exercise_id!) as { count: number }
-      ).count;
-
-      // Activate next exercise — first person to arrive gets is_active
+      // Activate next exercise, then correct is_active to match display order (TONY-80)
       updateSessionParticipant(next.id, {
         status: "active",
         started_at: now,
-        is_active: isActiveCount === 0,
       });
+      correctIsActiveForExercise(current.session_id, next.exercise_id!);
     }
     // If capacity is full, next exercise stays pending until space opens up
 
