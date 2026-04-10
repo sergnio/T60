@@ -90,6 +90,7 @@ const databaseAPI = {
     exerciseId: string,
     maxWeight: number,
     weightUnit: WeightUnit,
+    barWeight?: number | null,
   ) =>
     ipcRenderer.invoke(
       "db:setPersonMaxWeight",
@@ -97,6 +98,7 @@ const databaseAPI = {
       exerciseId,
       maxWeight,
       weightUnit,
+      barWeight,
     ),
   getPersonMaxWeights: (personId: string) =>
     ipcRenderer.invoke("db:getPersonMaxWeights", personId),

@@ -33,7 +33,11 @@
       "mcp__linear-server__list_comments",
       "mcp__linear-server__list_issue_statuses",
       "mcp__linear-server__research",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(npx prettier:*)",
+      "Bash(cat .eslintrc*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(git add:*)"
     ]
   }
 }

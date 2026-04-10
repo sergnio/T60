@@ -127,12 +127,13 @@ const registerServiceHandlers = () => {
   // Person Max Weights
   ipcMain.handle(
     "db:setPersonMaxWeight",
-    (_, personId, exerciseId, maxWeight, weightUnit) =>
+    (_, personId, exerciseId, maxWeight, weightUnit, barWeight) =>
       maxWeightService.setPersonMaxWeight(
         personId,
         exerciseId,
         maxWeight,
         weightUnit,
+        barWeight,
       ),
   );
   ipcMain.handle("db:getPersonMaxWeights", (_, personId) =>

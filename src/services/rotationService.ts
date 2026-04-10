@@ -53,9 +53,8 @@ function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
     throw new Error(`MAX_WEIGHT_NOT_FOUND:${personId}:${exerciseId}`);
   }
 
-  // Fetch the exercise's bar weight — NULL means no bar (0), positive means that bar weight
-  const exercise = queries.getExercise(exerciseId);
-  const barWeight = exercise?.bar_weight ?? 0;
+  // Use per-person bar weight from max weight record — NULL means no bar (0)
+  const barWeight = maxWeightRecord.bar_weight ?? 0;
 
   const weights = calculateSetWeights(maxWeightRecord.max_weight, barWeight);
 

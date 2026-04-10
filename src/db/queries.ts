@@ -802,6 +802,7 @@ export function setPersonMaxWeight(
   exerciseId: string,
   maxWeight: number,
   weightUnit: WeightUnit,
+  barWeight?: number | null,
 ): PersonMaxWeight {
   const db = getDatabase();
   const now = Date.now();
@@ -810,14 +811,24 @@ export function setPersonMaxWeight(
   const existing = getPersonMaxWeight(personId, exerciseId);
 
   if (existing) {
-    // Update existing record
-    db.prepare(
-      `
-      UPDATE person_max_weights
-      SET max_weight = ?, weight_unit = ?, updated_at = ?
-      WHERE person_id = ? AND exercise_id = ?
-    `,
-    ).run(maxWeight, weightUnit, now, personId, exerciseId);
+    // Update existing record — only update bar_weight if explicitly provided
+    if (barWeight !== undefined) {
+      db.prepare(
+        `
+        UPDATE person_max_weights
+        SET max_weight = ?, weight_unit = ?, bar_weight = ?, updated_at = ?
+        WHERE person_id = ? AND exercise_id = ?
+      `,
+      ).run(maxWeight, weightUnit, barWeight, now, personId, exerciseId);
+    } else {
+      db.prepare(
+        `
+        UPDATE person_max_weights
+        SET max_weight = ?, weight_unit = ?, updated_at = ?
+        WHERE person_id = ? AND exercise_id = ?
+      `,
+      ).run(maxWeight, weightUnit, now, personId, exerciseId);
+    }
 
     return getPersonMaxWeight(personId, exerciseId)!;
   } else {
@@ -825,10 +836,10 @@ export function setPersonMaxWeight(
     const id = crypto.randomUUID();
     db.prepare(
       `
-      INSERT INTO person_max_weights (id, person_id, exercise_id, max_weight, weight_unit, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO person_max_weights (id, person_id, exercise_id, max_weight, bar_weight, weight_unit, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
-    ).run(id, personId, exerciseId, maxWeight, weightUnit, now, now);
+    ).run(id, personId, exerciseId, maxWeight, barWeight ?? null, weightUnit, now, now);
 
     return getPersonMaxWeight(personId, exerciseId)!;
   }

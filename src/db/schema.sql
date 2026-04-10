@@ -95,6 +95,7 @@ CREATE TABLE IF NOT EXISTS person_max_weights (
   person_id TEXT NOT NULL,
   exercise_id TEXT NOT NULL,
   max_weight REAL NOT NULL,
+  bar_weight REAL DEFAULT NULL,               -- Per-person bar weight in lbs (NULL = not set, 0 = no bar, 45 = standard barbell)
   weight_unit TEXT NOT NULL CHECK(weight_unit IN ('lbs', 'kg')),
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL,

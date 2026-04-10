@@ -179,6 +179,7 @@ export interface PersonMaxWeight {
   person_id: string;
   exercise_id: string;
   max_weight: number;
+  bar_weight: number | null; // Per-person bar weight in lbs (NULL = not set, 0 = no bar, 45 = standard barbell)
   weight_unit: WeightUnit;
   created_at: number;
   updated_at: number;

@@ -158,6 +158,26 @@ function runMigrations(database: Database.Database): void {
     database.prepare("UPDATE exercises SET bar_weight = 45").run();
   }
 
+  // Add bar_weight column to person_max_weights if missing (TONY-99 fix: per-person bar weight)
+  const pmwColumns = database
+    .prepare("PRAGMA table_info(person_max_weights)")
+    .all() as { name: string }[];
+  const pmwHasBarWeight = pmwColumns.some((col) => col.name === "bar_weight");
+
+  if (!pmwHasBarWeight) {
+    console.log("Migration: adding bar_weight column to person_max_weights (per-person bar weight)");
+    database.prepare("ALTER TABLE person_max_weights ADD COLUMN bar_weight REAL DEFAULT NULL").run();
+
+    // Copy bar_weight from exercises table to person_max_weights for existing records
+    database.prepare(`
+      UPDATE person_max_weights
+      SET bar_weight = (
+        SELECT e.bar_weight FROM exercises e WHERE e.id = person_max_weights.exercise_id
+      )
+    `).run();
+    console.log("Migration: copied existing exercise bar_weight values to person_max_weights");
+  }
+
   // Create rotation_configs table if missing
   const rotationConfigTables = database
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rotation_configs'")

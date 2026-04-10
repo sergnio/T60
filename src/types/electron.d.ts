@@ -97,6 +97,7 @@ declare global {
         exerciseId: string,
         maxWeight: number,
         weightUnit: WeightUnit,
+        barWeight?: number | null,
       ) => Promise<ServiceResult<PersonMaxWeight>>;
       getPersonMaxWeights: (personId: string) => Promise<ServiceResult<PersonMaxWeight[]>>;
       getPersonMaxWeight: (

@@ -6,7 +6,6 @@ import {
   useSetPersonMaxWeight,
   useDeletePersonMaxWeight,
 } from "../hooks/mutations/useMaxWeightMutations.ts";
-import { useUpdateExercise } from "../hooks/mutations/useExerciseMutations.ts";
 import { MaxWeightEditForm } from "./MaxWeightEditForm.tsx";
 import type { WeightUnit } from "../db/types.ts";
 import styles from "./MaxWeightManager.module.scss";
@@ -26,7 +25,6 @@ export function MaxWeightManager() {
 
   const setMaxWeight = useSetPersonMaxWeight();
   const deleteMaxWeight = useDeletePersonMaxWeight();
-  const updateExercise = useUpdateExercise();
 
   const handleSelectPerson = (personId: string) => {
     setSelectedPersonId(personId);
@@ -84,11 +82,16 @@ export function MaxWeightManager() {
 
   const handleSaveBarWeight = async (exerciseId: string) => {
     const parsed = editBarWeight.trim() === "" ? null : parseFloat(editBarWeight);
+    const existing = maxWeights.find((mw) => mw.exercise_id === exerciseId);
+    if (!selectedPersonId || !existing) return;
 
     try {
-      await updateExercise.mutateAsync({
-        id: exerciseId,
-        input: { bar_weight: parsed },
+      await setMaxWeight.mutateAsync({
+        personId: selectedPersonId,
+        exerciseId,
+        maxWeight: existing.max_weight,
+        weightUnit: existing.weight_unit,
+        barWeight: parsed,
       });
       setEditingBarWeightId("");
       setEditBarWeight("");
@@ -145,22 +148,25 @@ export function MaxWeightManager() {
 
                   const isEditingBarWeight = editingBarWeightId === exercise.id;
 
+                  const personBarWeight = maxWeight?.bar_weight ?? null;
+
                   return (
                     <div key={exercise.id} className={styles.exerciseRow}>
                       <div className={styles.exerciseInfo}>
                         <div className={styles.exerciseName}>{exercise.name}</div>
-                        {/* Bar weight display/edit */}
+                        {/* Bar weight display/edit — only show when max weight is set */}
+                        {maxWeight && (
                         <div className={styles.barWeightRow}>
                           {!isEditingBarWeight ? (
                             <>
                               <span className={styles.barWeightLabel}>
-                                Bar: {exercise.bar_weight != null ? `${exercise.bar_weight} lbs` : "Not set"}
+                                Bar: {personBarWeight != null ? `${personBarWeight} lbs` : "Not set"}
                               </span>
                               <button
-                                onClick={() => handleStartBarWeightEdit(exercise.id, exercise.bar_weight)}
+                                onClick={() => handleStartBarWeightEdit(exercise.id, personBarWeight)}
                                 className={styles.barWeightEditBtn}
                               >
-                                {exercise.bar_weight != null ? "Edit" : "Set"}
+                                {personBarWeight != null ? "Edit" : "Set"}
                               </button>
                             </>
                           ) : (
@@ -199,6 +205,7 @@ export function MaxWeightManager() {
                             </>
                           )}
                         </div>
+                        )}
                       </div>
 
                       {!isEditing && (
