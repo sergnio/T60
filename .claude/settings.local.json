@@ -37,7 +37,10 @@
       "Bash(npx prettier:*)",
       "Bash(cat .eslintrc*)",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(linear issue:*)",
+      "Bash(find . -name *.linear* -o -name *linear*config*)",
+      "Bash(find . -type f \\\\\\(-name package.json -o -name pyproject.toml -o -name .env* \\\\\\))"
     ]
   }
 }
