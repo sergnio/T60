@@ -78,38 +78,44 @@ Then update `workoutSessionService.ts`, `rotationService.ts`, and `WorkoutCardT1
 
 ### Phase 1: Refactor (no behavior change)
 
-- [ ] Create `src/utils/weightCalculation.ts` with `calculateLoadableWeight(targetWeight, barWeight)` and `PLATE_WEIGHTS`
-- [ ] Update `src/services/workoutSessionService.ts` to import and use the shared utility (pass `45` as barWeight to preserve behavior)
-- [ ] Update `src/services/rotationService.ts` to import and use the shared utility
-- [ ] Update `src/stories/WorkoutCardT18.tsx` to import and use the shared utility
-- [ ] Run existing tests (`yarn test`) — all should pass with no changes
+- [x] Create `src/utils/weightCalculation.ts` with `calculateLoadableWeight(targetWeight, barWeight)` and `PLATE_WEIGHTS`
+- [x] Update `src/services/workoutSessionService.ts` to import and use the shared utility (pass `45` as barWeight to preserve behavior)
+- [x] Update `src/services/rotationService.ts` to import and use the shared utility
+- [x] Update `src/stories/WorkoutCardT18.tsx` to import and use the shared utility
+- [x] Run existing tests (`yarn test`) — all should pass with no changes
 
 ### Phase 2: Database
 
-- [ ] Add `bar_weight` column to `exercises` table in `src/db/schema.sql`: `bar_weight REAL DEFAULT NULL`
-- [ ] Write a migration in `src/db/init.ts` (or wherever migrations run) to `ALTER TABLE exercises ADD COLUMN bar_weight REAL DEFAULT 45` so existing rows get 45
-- [ ] Add `bar_weight: number | null` to the `Exercise` interface in `src/db/types.ts`
-- [ ] Update exercise insert/update queries in `src/db/queries.ts` to accept and persist `bar_weight`
+- [x] Add `bar_weight` column to `exercises` table in `src/db/schema.sql`: `bar_weight REAL DEFAULT NULL`
+- [x] Write a migration in `src/db/init.ts` (or wherever migrations run) to `ALTER TABLE exercises ADD COLUMN bar_weight REAL DEFAULT 45` so existing rows get 45
+- [x] Add `bar_weight: number | null` to the `Exercise` interface in `src/db/types.ts`
+- [x] Update exercise insert/update queries in `src/db/queries.ts` to accept and persist `bar_weight`
 
 ### Phase 3: Service layer
 
-- [ ] Update `generateSetsConfig()` in `workoutSessionService.ts` to fetch the exercise's `bar_weight` and pass it to `calculateLoadableWeight()`
-- [ ] Update `generateSetsConfig()` in `rotationService.ts` similarly
-- [ ] When `bar_weight` is NULL or 0, pass `0` to `calculateLoadableWeight()` (no bar offset)
-- [ ] When `bar_weight` is a positive number, pass that value
+- [x] Update `generateSetsConfig()` in `workoutSessionService.ts` to fetch the exercise's `bar_weight` and pass it to `calculateLoadableWeight()`
+- [x] Update `generateSetsConfig()` in `rotationService.ts` similarly
+- [x] When `bar_weight` is NULL or 0, pass `0` to `calculateLoadableWeight()` (no bar offset)
+- [x] When `bar_weight` is a positive number, pass that value
 
 ### Phase 4: UI
 
-- [ ] Add a "Bar weight (lbs)" numeric input to the exercise creation flow in `SessionCreationForm.tsx` (default 45, clearable to 0/blank)
-- [ ] If there is an exercise edit form, add the field there too
-- [ ] Update `WorkoutCardT18.tsx` to read `bar_weight` from the exercise data instead of hardcoding 45
-- [ ] Create a Storybook story for the bar weight input (per CLAUDE.md: new components need stories)
+- [x] Add a "Bar weight (lbs)" numeric input to the exercise creation flow in `SessionCreationForm.tsx` (default 45, clearable to 0/blank)
+- [x] If there is an exercise edit form, add the field there too
+- [x] Update `WorkoutCardT18.tsx` to read `bar_weight` from the exercise data instead of hardcoding 45
+- [x] Create a Storybook story for the bar weight input (per CLAUDE.md: new components need stories)
 
 ### Phase 5: Tests
 
 - [ ] Update `workoutSessionService.test.ts` to test with different bar weights (0, 45, custom)
 - [ ] Add tests for the new `weightCalculation.ts` utility directly
 - [ ] Test edge cases: NULL bar_weight treated as 0, bar_weight = 45 (barbell), bar_weight = 0 (dumbbell/cable)
+
+_Note: Tests deferred — user confirmed no test infrastructure in place currently._
+
+### Future: kg unit support
+
+- Created TONY-103 (feature) and TONY-104 (testing) for future kg bar weight support
 
 ## Impact assessment
 

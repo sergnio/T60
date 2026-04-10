@@ -20,6 +20,8 @@ export interface Exercise {
   sets: WorkoutSet[];
   /** Index of the current set being performed */
   currentSetIndex: number;
+  /** Weight of the bar in lbs (0 for non-barbell exercises like dumbbells/cables) */
+  barWeight: number;
 }
 
 /**
@@ -36,32 +38,7 @@ export interface WorkoutCardT18Props {
   onSetComplete?: (setIndex: number) => void;
 }
 
-/**
- * Calculate the plate breakdown for a given weight
- * Assumes a 45lb barbell and returns pairs of plates needed
- */
-const calculatePlates = (
-  totalWeight: number,
-): { weight: number; count: number }[] => {
-  const barWeight = 45;
-  const weightToLoad = totalWeight - barWeight;
-  const perSide = weightToLoad / 2;
-
-  const plateWeights = [45, 25, 10, 5, 2.5];
-  const plates: { weight: number; count: number }[] = [];
-
-  let remaining = perSide;
-
-  for (const plateWeight of plateWeights) {
-    const count = Math.floor(remaining / plateWeight);
-    if (count > 0) {
-      plates.push({ weight: plateWeight, count });
-      remaining -= count * plateWeight;
-    }
-  }
-
-  return plates;
-};
+import { calculatePlateBreakdown } from "../utils/weightCalculation";
 
 /**
  * SVG representation of a weight plate with size based on weight
@@ -126,8 +103,8 @@ export const WorkoutCardT18 = ({
   const clampedSetIndex = Math.min(exercise.currentSetIndex, exercise.sets.length - 1);
   const currentSet = exercise.sets[clampedSetIndex];
   const currentWeight = currentSet?.weight || 0;
-  const plates = calculatePlates(currentWeight);
-  const barWeight = 45;
+  const barWeight = exercise.barWeight;
+  const plates = calculatePlateBreakdown(currentWeight, barWeight);
 
   return (
     <div className={`${styles.card} ${isActive ? styles.active : ""}`}>

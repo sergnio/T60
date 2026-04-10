@@ -31,42 +31,20 @@ export interface SessionAssignments {
   }[];
 }
 
-/**
- * Calculates the actual loadable weight using available plates
- */
-function calculateLoadableWeight(targetWeight: number): number {
-  const barWeight = 45;
-  const plateWeights = [45, 25, 10, 5, 2.5];
-
-  const weightToLoad = Math.max(0, targetWeight - barWeight);
-  const perSide = weightToLoad / 2;
-
-  let loadedPerSide = 0;
-  let remaining = perSide;
-
-  for (const plateWeight of plateWeights) {
-    const count = Math.floor(remaining / plateWeight);
-    if (count > 0) {
-      loadedPerSide += count * plateWeight;
-      remaining -= count * plateWeight;
-    }
-  }
-
-  return barWeight + (loadedPerSide * 2);
-}
+import { calculateLoadableWeight } from "../utils/weightCalculation.js";
 
 /**
  * Calculates set weights based on max weight percentage
  */
-function calculateSetWeights(maxWeight: number): number[] {
+function calculateSetWeights(maxWeight: number, barWeight: number): number[] {
   const percentages = [0.5, 0.75, 0.85, 0.85, 0.85];
   return percentages.map(percentage =>
-    calculateLoadableWeight(maxWeight * percentage)
+    calculateLoadableWeight(maxWeight * percentage, barWeight)
   );
 }
 
 /**
- * Generates sets config based on max weight
+ * Generates sets config based on max weight and the exercise's bar weight.
  */
 function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
   const maxWeightRecord = queries.getPersonMaxWeight(personId, exerciseId);
@@ -75,7 +53,11 @@ function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
     throw new Error(`MAX_WEIGHT_NOT_FOUND:${personId}:${exerciseId}`);
   }
 
-  const weights = calculateSetWeights(maxWeightRecord.max_weight);
+  // Fetch the exercise's bar weight — NULL means no bar (0), positive means that bar weight
+  const exercise = queries.getExercise(exerciseId);
+  const barWeight = exercise?.bar_weight ?? 0;
+
+  const weights = calculateSetWeights(maxWeightRecord.max_weight, barWeight);
 
   return [
     { weight: weights[0], reps: 10 },

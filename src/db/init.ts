@@ -145,6 +145,19 @@ function runMigrations(database: Database.Database): void {
     console.log("Migration: rotation support added successfully");
   }
 
+  // Add bar_weight column to exercises if missing (TONY-99)
+  const exerciseColumnsForBarWeight = database
+    .prepare("PRAGMA table_info(exercises)")
+    .all() as { name: string }[];
+  const hasBarWeight = exerciseColumnsForBarWeight.some((col) => col.name === "bar_weight");
+
+  if (!hasBarWeight) {
+    console.log("Migration: adding bar_weight column to exercises");
+    // Default existing exercises to 45 (standard barbell) for backward compatibility
+    database.prepare("ALTER TABLE exercises ADD COLUMN bar_weight REAL DEFAULT NULL").run();
+    database.prepare("UPDATE exercises SET bar_weight = 45").run();
+  }
+
   // Create rotation_configs table if missing
   const rotationConfigTables = database
     .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rotation_configs'")
@@ -262,9 +275,11 @@ function ensureDefaultExercises(): void {
     "Shoulder Press",
   ];
 
+  // Default barbell exercises get bar_weight = 45; this ensures fresh installs
+  // have the correct bar offset for standard exercises. Users can change it later.
   const stmt = database.prepare(`
-    INSERT OR IGNORE INTO exercises (name)
-    SELECT ?
+    INSERT OR IGNORE INTO exercises (name, bar_weight)
+    SELECT ?, 45
     WHERE NOT EXISTS (SELECT 1 FROM exercises WHERE name = ?)
   `);
 

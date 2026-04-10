@@ -3,6 +3,7 @@ import type {
   Person,
   Exercise,
   CreateExerciseInput,
+  UpdateExerciseInput,
   WorkoutSession,
   SessionParticipant,
   Set,
@@ -31,14 +32,46 @@ export function createExercise(input: CreateExerciseInput): Exercise {
   const result = db
     .prepare(
       `
-    INSERT INTO exercises (name)
-    VALUES (?)
+    INSERT INTO exercises (name, bar_weight)
+    VALUES (?, ?)
     RETURNING id
   `,
     )
-    .get(input.name) as { id: string };
+    .get(input.name, input.bar_weight ?? null) as { id: string };
 
   return getExercise(result.id)!;
+}
+
+export function updateExercise(
+  id: string,
+  input: UpdateExerciseInput,
+): Exercise | null {
+  const db = getDatabase();
+  const now = Date.now();
+
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (input.name !== undefined) {
+    updates.push("name = ?");
+    values.push(input.name);
+  }
+  if (input.bar_weight !== undefined) {
+    updates.push("bar_weight = ?");
+    values.push(input.bar_weight);
+  }
+
+  if (updates.length > 0) {
+    updates.push("updated_at = ?");
+    values.push(now);
+    values.push(id);
+
+    db.prepare(
+      `UPDATE exercises SET ${updates.join(", ")} WHERE id = ?`,
+    ).run(...values);
+  }
+
+  return getExercise(id);
 }
 
 export function getExercise(id: string): Exercise | null {

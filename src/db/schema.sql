@@ -5,8 +5,9 @@
 CREATE TABLE IF NOT EXISTS exercises (
   id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),  -- Auto-generated UUID
   name TEXT NOT NULL UNIQUE,
-  created_at INTEGER NOT NULL DEFAULT (unixepoch()),  -- Auto-generated Unix timestamp
-  updated_at INTEGER NOT NULL DEFAULT (unixepoch())   -- Auto-generated Unix timestamp
+  bar_weight REAL DEFAULT NULL,                              -- Bar weight in lbs (NULL = not set, 0 = no bar, 45 = standard barbell)
+  created_at INTEGER NOT NULL DEFAULT (unixepoch()),         -- Auto-generated Unix timestamp
+  updated_at INTEGER NOT NULL DEFAULT (unixepoch())          -- Auto-generated Unix timestamp
 );
 
 -- People/Athletes

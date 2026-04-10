@@ -3,52 +3,52 @@
  * Ensures that calculated weights can actually be loaded with available plates
  */
 import { describe, it, expect } from "vitest";
-import { calculateLoadableWeight } from "./workoutSessionService.js";
+import { calculateLoadableWeight } from "../utils/weightCalculation.js";
 
 describe("calculateLoadableWeight", () => {
   const BAR_WEIGHT = 45;
 
   describe("Bar only scenarios", () => {
     it("should return bar weight when target is less than bar weight", () => {
-      expect(calculateLoadableWeight(0)).toBe(BAR_WEIGHT);
-      expect(calculateLoadableWeight(30)).toBe(BAR_WEIGHT);
-      expect(calculateLoadableWeight(44.9)).toBe(BAR_WEIGHT);
+      expect(calculateLoadableWeight(0, BAR_WEIGHT)).toBe(BAR_WEIGHT);
+      expect(calculateLoadableWeight(30, BAR_WEIGHT)).toBe(BAR_WEIGHT);
+      expect(calculateLoadableWeight(44.9, BAR_WEIGHT)).toBe(BAR_WEIGHT);
     });
 
     it("should return bar weight when target equals bar weight", () => {
-      expect(calculateLoadableWeight(45)).toBe(BAR_WEIGHT);
+      expect(calculateLoadableWeight(45, BAR_WEIGHT)).toBe(BAR_WEIGHT);
     });
   });
 
   describe("Exact plate fits", () => {
     it("should handle single 2.5lb plate per side (50 total)", () => {
-      expect(calculateLoadableWeight(50)).toBe(50);
+      expect(calculateLoadableWeight(50, BAR_WEIGHT)).toBe(50);
     });
 
     it("should handle single 5lb plate per side (55 total)", () => {
-      expect(calculateLoadableWeight(55)).toBe(55);
+      expect(calculateLoadableWeight(55, BAR_WEIGHT)).toBe(55);
     });
 
     it("should handle single 10lb plate per side (65 total)", () => {
-      expect(calculateLoadableWeight(65)).toBe(65);
+      expect(calculateLoadableWeight(65, BAR_WEIGHT)).toBe(65);
     });
 
     it("should handle single 25lb plate per side (95 total)", () => {
-      expect(calculateLoadableWeight(95)).toBe(95);
+      expect(calculateLoadableWeight(95, BAR_WEIGHT)).toBe(95);
     });
 
     it("should handle single 45lb plate per side (135 total)", () => {
-      expect(calculateLoadableWeight(135)).toBe(135);
+      expect(calculateLoadableWeight(135, BAR_WEIGHT)).toBe(135);
     });
 
     it("should handle multiple plates that fit exactly (225 total)", () => {
       // 45 bar + (2×45 + 1×25) × 2 sides = 45 + 115×2 = 275
-      expect(calculateLoadableWeight(275)).toBe(275);
+      expect(calculateLoadableWeight(275, BAR_WEIGHT)).toBe(275);
     });
 
     it("should handle complex exact combination", () => {
       // 45 bar + (45 + 25 + 10 + 5 + 2.5) × 2 = 45 + 87.5×2 = 220
-      expect(calculateLoadableWeight(220)).toBe(220);
+      expect(calculateLoadableWeight(220, BAR_WEIGHT)).toBe(220);
     });
   });
 
@@ -56,68 +56,68 @@ describe("calculateLoadableWeight", () => {
     it("should round down when target has fractional component", () => {
       // 45 bar + 2.6 per side → can only load 2.5 per side
       // Result: 45 + 2.5×2 = 50
-      expect(calculateLoadableWeight(50.2)).toBe(50);
+      expect(calculateLoadableWeight(50.2, BAR_WEIGHT)).toBe(50);
     });
 
     it("should round down the original bug scenario (155 * 85%)", () => {
       // 155 * 0.85 = 131.75
       // Should load: 45 bar + (25+10+5+2.5)×2 = 45 + 42.5×2 = 130
-      expect(calculateLoadableWeight(131.75)).toBe(130);
+      expect(calculateLoadableWeight(131.75, BAR_WEIGHT)).toBe(130);
     });
 
     it("should round down 50% of 155", () => {
       // 155 * 0.5 = 77.5
       // Per side: 16.25 → can load 1×10 + 1×5 = 15 per side
       // Should load: 45 bar + 15×2 = 75
-      expect(calculateLoadableWeight(77.5)).toBe(75);
+      expect(calculateLoadableWeight(77.5, BAR_WEIGHT)).toBe(75);
     });
 
     it("should round down 75% of 155", () => {
       // 155 * 0.75 = 116.25
       // Should load: 45 bar + (25+10)×2 = 45 + 35×2 = 115
-      expect(calculateLoadableWeight(116.25)).toBe(115);
+      expect(calculateLoadableWeight(116.25, BAR_WEIGHT)).toBe(115);
     });
 
     it("should round down when remaining weight is less than smallest plate", () => {
       // 45 bar + 5.3 per side → can only load 5 per side
       // Result: 45 + 5×2 = 55
-      expect(calculateLoadableWeight(55.6)).toBe(55);
+      expect(calculateLoadableWeight(55.6, BAR_WEIGHT)).toBe(55);
     });
 
     it("should handle multiple rounding scenarios", () => {
       // 45 bar + 47.7 per side → can load 25+10+10+2.5 = 47.5 per side
       // Result: 45 + 47.5×2 = 140
-      expect(calculateLoadableWeight(140.4)).toBe(140);
+      expect(calculateLoadableWeight(140.4, BAR_WEIGHT)).toBe(140);
     });
   });
 
   describe("Comprehensive plate combinations", () => {
     it("should correctly calculate for 100 lbs target", () => {
       // 45 bar + (25+2.5)×2 = 45 + 27.5×2 = 100
-      expect(calculateLoadableWeight(100)).toBe(100);
+      expect(calculateLoadableWeight(100, BAR_WEIGHT)).toBe(100);
     });
 
     it("should correctly calculate for 200 lbs target", () => {
       // 45 bar + (45+25+5+2.5)×2 = 45 + 77.5×2 = 200
-      expect(calculateLoadableWeight(200)).toBe(200);
+      expect(calculateLoadableWeight(200, BAR_WEIGHT)).toBe(200);
     });
 
     it("should correctly calculate for 300 lbs target", () => {
-      expect(calculateLoadableWeight(300)).toBe(300);
+      expect(calculateLoadableWeight(300, BAR_WEIGHT)).toBe(300);
     });
 
     it("should handle very heavy weights", () => {
       // Per side: 227.5 → can load 5×45 = 225 per side (can't fit the extra 2.5)
       // 45 bar + 222.5×2 = 490
-      expect(calculateLoadableWeight(500)).toBe(500);
+      expect(calculateLoadableWeight(500, BAR_WEIGHT)).toBe(500);
     });
   });
 
   describe("Real-world percentage calculations", () => {
     const testMaxWeight = (maxWeight: number) => {
-      const at50 = calculateLoadableWeight(maxWeight * 0.5);
-      const at75 = calculateLoadableWeight(maxWeight * 0.75);
-      const at85 = calculateLoadableWeight(maxWeight * 0.85);
+      const at50 = calculateLoadableWeight(maxWeight * 0.5, BAR_WEIGHT);
+      const at75 = calculateLoadableWeight(maxWeight * 0.75, BAR_WEIGHT);
+      const at85 = calculateLoadableWeight(maxWeight * 0.85, BAR_WEIGHT);
 
       // Verify all weights are loadable (divisible structure checks)
       const verifyLoadable = (weight: number) => {
@@ -172,27 +172,27 @@ describe("calculateLoadableWeight", () => {
 
   describe("Edge cases", () => {
     it("should handle negative numbers gracefully", () => {
-      expect(calculateLoadableWeight(-10)).toBe(BAR_WEIGHT);
+      expect(calculateLoadableWeight(-10, BAR_WEIGHT)).toBe(BAR_WEIGHT);
     });
 
     it("should handle zero", () => {
-      expect(calculateLoadableWeight(0)).toBe(BAR_WEIGHT);
+      expect(calculateLoadableWeight(0, BAR_WEIGHT)).toBe(BAR_WEIGHT);
     });
 
     it("should handle fractional bar weight scenarios", () => {
-      expect(calculateLoadableWeight(45.1)).toBe(45);
-      expect(calculateLoadableWeight(47.4)).toBe(45);
+      expect(calculateLoadableWeight(45.1, BAR_WEIGHT)).toBe(45);
+      expect(calculateLoadableWeight(47.4, BAR_WEIGHT)).toBe(45);
     });
 
     it("should handle very small additions above bar weight", () => {
       // 45 + 0.1 per side → cannot load any plates
-      expect(calculateLoadableWeight(45.2)).toBe(45);
+      expect(calculateLoadableWeight(45.2, BAR_WEIGHT)).toBe(45);
     });
   });
 
   describe("Verification: Displayed weight equals sum of plates", () => {
     const verifyPlateSum = (targetWeight: number) => {
-      const loadableWeight = calculateLoadableWeight(targetWeight);
+      const loadableWeight = calculateLoadableWeight(targetWeight, BAR_WEIGHT);
       const weightToLoad = loadableWeight - BAR_WEIGHT;
       const perSide = weightToLoad / 2;
 

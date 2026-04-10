@@ -35,6 +35,9 @@ const registerServiceHandlers = () => {
     exerciseService.createExercise(input),
   );
   ipcMain.handle("db:getAllExercises", () => exerciseService.getAllExercises());
+  ipcMain.handle("db:updateExercise", (_, id, input) =>
+    exerciseService.updateExercise(id, input),
+  );
 
   // People
   ipcMain.handle("db:createPerson", (_, input) =>

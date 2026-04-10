@@ -10,12 +10,19 @@ export type WeightUnit = "lbs" | "kg";
 export interface Exercise {
   id: string;
   name: string;
+  bar_weight: number | null; // Bar weight in lbs (NULL = not set, 0 = no bar, 45 = standard barbell)
   created_at: number;
   updated_at: number;
 }
 
 export interface CreateExerciseInput {
   name: string;
+  bar_weight?: number | null; // Optional on creation — user must choose, but callers may omit
+}
+
+export interface UpdateExerciseInput {
+  name?: string;
+  bar_weight?: number | null;
 }
 
 /**
