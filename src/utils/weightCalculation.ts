@@ -43,6 +43,12 @@ export function calculateLoadableWeight(
     }
   }
 
+  // Round UP: if there's any leftover weight, add the smallest plate per side
+  const SMALLEST_PLATE = PLATE_WEIGHTS[PLATE_WEIGHTS.length - 1];
+  if (remaining > 0) {
+    loadedPerSide += SMALLEST_PLATE;
+  }
+
   return barWeight + loadedPerSide * 2;
 }
 
