@@ -9,6 +9,7 @@ interface WorkoutTimerProps {
   participants: ParticipantWithSets[];
 }
 
+const INITIAL_REST_DURATION = 60; // 1:00 rest before workout starts
 const REST_DURATION = 90; // 1:30 rest between all sets
 
 function getWorkingSetDuration(setIndex: number): number {
@@ -22,7 +23,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
   const [isRotationRest, setIsRotationRest] = useState(false);
   const [isRestBetweenSets, setIsRestBetweenSets] = useState(false);
   const [hasInitialized, setHasInitialized] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(REST_DURATION);
+  const [timeRemaining, setTimeRemaining] = useState(INITIAL_REST_DURATION);
   const [isRunning, setIsRunning] = useState(true);
 
   const completeSet = useCompleteSet();
