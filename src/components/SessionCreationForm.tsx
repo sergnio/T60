@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useAllPeople } from "../hooks/queries/usePeople.ts";
 import { useAllExercises } from "../hooks/queries/useExercises.ts";
 import { useCreateWorkoutSession } from "../hooks/mutations/useWorkoutSessionMutations.ts";
@@ -22,6 +22,7 @@ export function SessionCreationForm() {
 
   const [stations, setStations] = useState<StationState[]>([]);
   const [customExerciseName, setCustomExerciseName] = useState("");
+  const [customBarWeight, setCustomBarWeight] = useState<string>("");
   const [missingMaxWeights, setMissingMaxWeights] = useState<
     { personId: string; exerciseId: string }[]
   >([]);
@@ -40,8 +41,7 @@ export function SessionCreationForm() {
   const selectedExerciseIds = new Set(stations.map((s) => s.exerciseId));
 
   const isValid =
-    stations.length > 0 &&
-    stations.every((s) => s.participantIds.size >= 1);
+    stations.length > 0 && stations.some((s) => s.participantIds.size >= 1);
 
   const handleSelectExercise = (exerciseId: string, exerciseName: string) => {
     if (selectedExerciseIds.has(exerciseId)) {
@@ -60,8 +60,17 @@ export function SessionCreationForm() {
     const name = customExerciseName.trim();
     if (!name) return;
 
+    // Parse bar weight — empty string means user hasn't set it, which is allowed
+    // at creation time (they can set it later in MaxWeightManager)
+    const parsedBarWeight = customBarWeight.trim() === ""
+      ? null
+      : parseFloat(customBarWeight);
+
     try {
-      const exercise = await createExercise.mutateAsync({ name });
+      const exercise = await createExercise.mutateAsync({
+        name,
+        bar_weight: parsedBarWeight,
+      });
       setStations((prev) => [
         ...prev,
         {
@@ -71,6 +80,7 @@ export function SessionCreationForm() {
         },
       ]);
       setCustomExerciseName("");
+      setCustomBarWeight("");
     } catch {
       // mutation error handled by UI
     }
@@ -151,7 +161,7 @@ export function SessionCreationForm() {
             setShowMissingMaxWeightsPopup(true);
           }
         },
-      }
+      },
     );
   };
 
@@ -203,6 +213,22 @@ export function SessionCreationForm() {
               placeholder="Custom exercise..."
               className={styles.customExerciseInput}
               disabled={createSession.isPending}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handleAddCustomExercise();
+                }
+              }}
+            />
+            <input
+              type="number"
+              value={customBarWeight}
+              onChange={(e) => setCustomBarWeight(e.target.value)}
+              placeholder="Bar (lbs)"
+              className={styles.barWeightInput}
+              disabled={createSession.isPending}
+              min="0"
+              step="5"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -262,7 +288,9 @@ export function SessionCreationForm() {
                               person.id,
                             )
                           }
-                          disabled={isAssignedElsewhere || createSession.isPending}
+                          disabled={
+                            isAssignedElsewhere || createSession.isPending
+                          }
                         >
                           {person.name}
                         </button>

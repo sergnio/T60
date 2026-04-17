@@ -10,12 +10,19 @@ export type WeightUnit = "lbs" | "kg";
 export interface Exercise {
   id: string;
   name: string;
+  bar_weight: number | null; // Bar weight in lbs (NULL = not set, 0 = no bar, 45 = standard barbell)
   created_at: number;
   updated_at: number;
 }
 
 export interface CreateExerciseInput {
   name: string;
+  bar_weight?: number | null; // Optional on creation — user must choose, but callers may omit
+}
+
+export interface UpdateExerciseInput {
+  name?: string;
+  bar_weight?: number | null;
 }
 
 /**
@@ -94,6 +101,7 @@ export interface ExerciseStation {
   exerciseId: string;
   participantIds: string[]; // 1-2 people
   sets?: SetConfig[]; // If omitted, falls back to default 5-set scheme
+  isStartingExercise?: boolean; // For rotation: marks if this is where participant starts
 }
 
 export interface CreateWorkoutSessionInput {
@@ -171,6 +179,7 @@ export interface PersonMaxWeight {
   person_id: string;
   exercise_id: string;
   max_weight: number;
+  bar_weight: number | null; // Per-person bar weight in lbs (NULL = not set, 0 = no bar, 45 = standard barbell)
   weight_unit: WeightUnit;
   created_at: number;
   updated_at: number;

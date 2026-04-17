@@ -3,6 +3,7 @@ import type {
   Person,
   Exercise,
   CreateExerciseInput,
+  UpdateExerciseInput,
   WorkoutSession,
   SessionParticipant,
   Set,
@@ -28,15 +29,49 @@ import type {
 export function createExercise(input: CreateExerciseInput): Exercise {
   const db = getDatabase();
 
-  const result = db.prepare(
-    `
-    INSERT INTO exercises (name)
-    VALUES (?)
+  const result = db
+    .prepare(
+      `
+    INSERT INTO exercises (name, bar_weight)
+    VALUES (?, ?)
     RETURNING id
   `,
-  ).get(input.name) as { id: string };
+    )
+    .get(input.name, input.bar_weight ?? null) as { id: string };
 
   return getExercise(result.id)!;
+}
+
+export function updateExercise(
+  id: string,
+  input: UpdateExerciseInput,
+): Exercise | null {
+  const db = getDatabase();
+  const now = Date.now();
+
+  const updates: string[] = [];
+  const values: any[] = [];
+
+  if (input.name !== undefined) {
+    updates.push("name = ?");
+    values.push(input.name);
+  }
+  if (input.bar_weight !== undefined) {
+    updates.push("bar_weight = ?");
+    values.push(input.bar_weight);
+  }
+
+  if (updates.length > 0) {
+    updates.push("updated_at = ?");
+    values.push(now);
+    values.push(id);
+
+    db.prepare(
+      `UPDATE exercises SET ${updates.join(", ")} WHERE id = ?`,
+    ).run(...values);
+  }
+
+  return getExercise(id);
 }
 
 export function getExercise(id: string): Exercise | null {
@@ -70,13 +105,15 @@ export function getAllExercises(): Exercise[] {
 export function createPerson(input: CreatePersonInput): Person {
   const db = getDatabase();
 
-  const result = db.prepare(
-    `
+  const result = db
+    .prepare(
+      `
     INSERT INTO people (name)
     VALUES (?)
     RETURNING id
   `,
-  ).get(input.name) as { id: string };
+    )
+    .get(input.name) as { id: string };
 
   return getPerson(result.id)!;
 }
@@ -162,36 +199,114 @@ export function createWorkoutSession(
     `,
     ).run(sessionId, input.name || null, now, now, now);
 
-    // Create participants for each station
-    for (const station of input.stations) {
-      const exercise = getExercise(station.exerciseId);
-      if (!exercise) {
-        throw new Error(`Exercise not found: ${station.exerciseId}`);
-      }
+    // Detect rotation workout: if any station has isStartingExercise defined
+    const isRotationWorkout = input.stations.some(s => s.isStartingExercise !== undefined);
 
-      for (const personId of station.participantIds) {
-        const participant = createSessionParticipant({
-          session_id: sessionId,
-          person_id: personId,
-          exercise_name: exercise.name,
-          exercise_id: exercise.id,
-          weight_unit: input.weightUnit,
-        });
+    // Collect exercise IDs for the is_active correction pass at the end
+    const allExerciseIds = new Set<string>();
 
-        // Sets must be provided by the service layer
-        if (!station.sets) {
-          throw new Error("Sets configuration is required for each station");
+    if (isRotationWorkout) {
+      console.log("[db:createWorkoutSession] Creating rotation workout");
+
+      // Build rotation order from unique exercises
+      const exerciseIds = [...new Set(input.stations.map(s => s.exerciseId))];
+      const exerciseIndexMap = new Map(exerciseIds.map((id, idx) => [id, idx]));
+
+      // Track how many participants per exercise to set is_active correctly
+      const exerciseParticipantCount = new Map<string, number>();
+
+      for (const station of input.stations) {
+        const exercise = getExercise(station.exerciseId);
+        if (!exercise) {
+          throw new Error(`Exercise not found: ${station.exerciseId}`);
         }
 
-        for (let setIndex = 0; setIndex < station.sets.length; setIndex++) {
-          createSet({
-            participant_id: participant.id,
-            set_index: setIndex,
-            weight: station.sets[setIndex].weight,
-            reps: station.sets[setIndex].reps,
+        for (const personId of station.participantIds) {
+          const count = exerciseParticipantCount.get(station.exerciseId) ?? 0;
+          const isFirstAtExercise = count === 0 && station.isStartingExercise;
+          exerciseParticipantCount.set(station.exerciseId, count + 1);
+
+          const rotationOrder = exerciseIndexMap.get(station.exerciseId) ?? 0;
+          const status = station.isStartingExercise ? "active" : "pending";
+
+          const participant = createSessionParticipant({
+            session_id: sessionId,
+            person_id: personId,
+            exercise_name: exercise.name,
+            exercise_id: exercise.id,
+            weight_unit: input.weightUnit,
+            is_active: isFirstAtExercise,
+            status: status,
+            rotation_order: rotationOrder,
+            started_at: station.isStartingExercise ? now : undefined,
           });
+
+          allExerciseIds.add(station.exerciseId);
+
+          // Sets must be provided by the service layer
+          if (!station.sets) {
+            throw new Error("Sets configuration is required for each station");
+          }
+
+          // Create sets for ALL participant records (both active and pending)
+          // This ensures all 15 sets per person are created upfront for rotation workouts
+          for (let setIndex = 0; setIndex < station.sets.length; setIndex++) {
+            createSet({
+              participant_id: participant.id,
+              set_index: setIndex,
+              weight: station.sets[setIndex].weight,
+              reps: station.sets[setIndex].reps,
+            });
+          }
         }
       }
+    } else {
+      // Non-rotation workout: original logic
+      const exerciseParticipantCount = new Map<string, number>();
+
+      for (const station of input.stations) {
+        const exercise = getExercise(station.exerciseId);
+        if (!exercise) {
+          throw new Error(`Exercise not found: ${station.exerciseId}`);
+        }
+
+        for (const personId of station.participantIds) {
+          const count = exerciseParticipantCount.get(station.exerciseId) ?? 0;
+          const isFirstAtExercise = count === 0;
+          exerciseParticipantCount.set(station.exerciseId, count + 1);
+
+          const participant = createSessionParticipant({
+            session_id: sessionId,
+            person_id: personId,
+            exercise_name: exercise.name,
+            exercise_id: exercise.id,
+            weight_unit: input.weightUnit,
+            is_active: isFirstAtExercise,
+            status: "active",
+          });
+
+          allExerciseIds.add(station.exerciseId);
+
+          // Sets must be provided by the service layer
+          if (!station.sets) {
+            throw new Error("Sets configuration is required for each station");
+          }
+
+          for (let setIndex = 0; setIndex < station.sets.length; setIndex++) {
+            createSet({
+              participant_id: participant.id,
+              set_index: setIndex,
+              weight: station.sets[setIndex].weight,
+              reps: station.sets[setIndex].reps,
+            });
+          }
+        }
+      }
+    }
+
+    // Correction pass: ensure is_active aligns with display sort order (TONY-80)
+    for (const exerciseId of allExerciseIds) {
+      correctIsActiveForExercise(sessionId, exerciseId);
     }
 
     return getSessionWithParticipants(sessionId)!;
@@ -345,6 +460,46 @@ export function getSessionParticipant(id: string): SessionParticipant | null {
     .get(id) as SessionParticipant | undefined;
 
   return row || null;
+}
+
+/**
+ * Ensures that within a given exercise, the active-status participant whose UUID
+ * sorts first (via localeCompare) has is_active=true, and all others have is_active=false.
+ * This keeps the is_active flag aligned with the UI display order (which sorts by UUID).
+ *
+ * IMPORTANT: Display sort and is_active assignment both use id.localeCompare
+ * to ensure the visually-top participant is the active one. See TONY-80.
+ *
+ * Call this after any operation that changes which participants are active at an exercise
+ * (session creation, rotation, etc.).
+ */
+export function correctIsActiveForExercise(
+  sessionId: string,
+  exerciseId: string,
+): void {
+  const db = getDatabase();
+  const now = Date.now();
+
+  // Get all active-status participants at this exercise
+  const activeParticipants = db
+    .prepare(
+      `SELECT id FROM session_participants
+       WHERE session_id = ? AND exercise_id = ? AND status = 'active'
+       ORDER BY id ASC`,
+    )
+    .all(sessionId, exerciseId) as { id: string }[];
+
+  if (activeParticipants.length === 0) return;
+
+  // Sort by UUID (localeCompare) to match display order
+  const sortedIds = activeParticipants.map(p => p.id).sort((a, b) => a.localeCompare(b));
+
+  // First gets is_active=true, rest get is_active=false
+  for (let i = 0; i < sortedIds.length; i++) {
+    db.prepare(
+      `UPDATE session_participants SET is_active = ?, updated_at = ? WHERE id = ?`,
+    ).run(i === 0 ? 1 : 0, now, sortedIds[i]);
+  }
 }
 
 export function getSessionParticipants(
@@ -536,6 +691,7 @@ export function completeSet(id: string): Set | null {
       `[db:completeSet] Participant ${set.participant_id} current_set_index BEFORE: ${participantBefore?.current_set_index}`,
     );
 
+    // todo - srn I think this needs to go
     // 2. Complete the set
     db.prepare(
       `
@@ -646,6 +802,7 @@ export function setPersonMaxWeight(
   exerciseId: string,
   maxWeight: number,
   weightUnit: WeightUnit,
+  barWeight?: number | null,
 ): PersonMaxWeight {
   const db = getDatabase();
   const now = Date.now();
@@ -654,14 +811,24 @@ export function setPersonMaxWeight(
   const existing = getPersonMaxWeight(personId, exerciseId);
 
   if (existing) {
-    // Update existing record
-    db.prepare(
-      `
-      UPDATE person_max_weights
-      SET max_weight = ?, weight_unit = ?, updated_at = ?
-      WHERE person_id = ? AND exercise_id = ?
-    `,
-    ).run(maxWeight, weightUnit, now, personId, exerciseId);
+    // Update existing record — only update bar_weight if explicitly provided
+    if (barWeight !== undefined) {
+      db.prepare(
+        `
+        UPDATE person_max_weights
+        SET max_weight = ?, weight_unit = ?, bar_weight = ?, updated_at = ?
+        WHERE person_id = ? AND exercise_id = ?
+      `,
+      ).run(maxWeight, weightUnit, barWeight, now, personId, exerciseId);
+    } else {
+      db.prepare(
+        `
+        UPDATE person_max_weights
+        SET max_weight = ?, weight_unit = ?, updated_at = ?
+        WHERE person_id = ? AND exercise_id = ?
+      `,
+      ).run(maxWeight, weightUnit, now, personId, exerciseId);
+    }
 
     return getPersonMaxWeight(personId, exerciseId)!;
   } else {
@@ -669,10 +836,10 @@ export function setPersonMaxWeight(
     const id = crypto.randomUUID();
     db.prepare(
       `
-      INSERT INTO person_max_weights (id, person_id, exercise_id, max_weight, weight_unit, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO person_max_weights (id, person_id, exercise_id, max_weight, bar_weight, weight_unit, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `,
-    ).run(id, personId, exerciseId, maxWeight, weightUnit, now, now);
+    ).run(id, personId, exerciseId, maxWeight, barWeight ?? null, weightUnit, now, now);
 
     return getPersonMaxWeight(personId, exerciseId)!;
   }
@@ -751,7 +918,14 @@ export function createRotationConfig(
     INSERT INTO rotation_configs (id, session_id, exercise_order, max_concurrent_per_exercise, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?)
   `,
-  ).run(id, sessionId, JSON.stringify(exerciseIds), maxConcurrentPerExercise, now, now);
+  ).run(
+    id,
+    sessionId,
+    JSON.stringify(exerciseIds),
+    maxConcurrentPerExercise,
+    now,
+    now,
+  );
 }
 
 /**
@@ -913,11 +1087,12 @@ export function completeExerciseAndRotate(
     );
 
     if (activeCount < maxConcurrent) {
-      // Activate next exercise
+      // Activate next exercise, then correct is_active to match display order (TONY-80)
       updateSessionParticipant(next.id, {
         status: "active",
         started_at: now,
       });
+      correctIsActiveForExercise(current.session_id, next.exercise_id!);
     }
     // If capacity is full, next exercise stays pending until space opens up
 

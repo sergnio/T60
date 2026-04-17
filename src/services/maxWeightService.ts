@@ -11,6 +11,7 @@ export async function setPersonMaxWeight(
   exerciseId: string,
   maxWeight: number,
   weightUnit: WeightUnit,
+  barWeight?: number | null,
 ): Promise<ServiceResult<PersonMaxWeight>> {
   console.log(
     "[maxWeightService:setPersonMaxWeight] Setting max weight for person:",
@@ -20,6 +21,8 @@ export async function setPersonMaxWeight(
     "weight:",
     maxWeight,
     weightUnit,
+    "barWeight:",
+    barWeight,
   );
   try {
     const result = queries.setPersonMaxWeight(
@@ -27,6 +30,7 @@ export async function setPersonMaxWeight(
       exerciseId,
       maxWeight,
       weightUnit,
+      barWeight,
     );
     console.log("[maxWeightService:setPersonMaxWeight] Success:", result.id);
     return { success: true, data: result };

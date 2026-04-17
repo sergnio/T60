@@ -3,7 +3,9 @@
  */
 import type {
   CreateExerciseInput,
+  UpdateExerciseInput,
   CreatePersonInput,
+  CreateRotationSessionInput,
   CreateSessionParticipantInput,
   CreateSetInput,
   CreateWorkoutSessionInput,
@@ -11,8 +13,10 @@ import type {
   UpdateSessionParticipantInput,
   UpdateSetInput,
   UpdateWorkoutSessionInput,
+  WeightUnit,
   Exercise,
   Person,
+  PersonMaxWeight,
   WorkoutSession,
   SessionParticipant,
   Set,
@@ -26,6 +30,7 @@ declare global {
     database: {
       // Exercises
       createExercise: (input: CreateExerciseInput) => Promise<ServiceResult<Exercise>>;
+      updateExercise: (id: string, input: UpdateExerciseInput) => Promise<ServiceResult<Exercise | null>>;
       getAllExercises: () => Promise<ServiceResult<Exercise[]>>;
 
       // People
@@ -85,6 +90,33 @@ declare global {
         sessionId: string,
       ) => Promise<ServiceResult<SessionWithParticipants | null>>;
       getActiveSessionWithParticipants: () => Promise<ServiceResult<SessionWithParticipants | null>>;
+
+      // Person Max Weights
+      setPersonMaxWeight: (
+        personId: string,
+        exerciseId: string,
+        maxWeight: number,
+        weightUnit: WeightUnit,
+        barWeight?: number | null,
+      ) => Promise<ServiceResult<PersonMaxWeight>>;
+      getPersonMaxWeights: (personId: string) => Promise<ServiceResult<PersonMaxWeight[]>>;
+      getPersonMaxWeight: (
+        personId: string,
+        exerciseId: string,
+      ) => Promise<ServiceResult<PersonMaxWeight | null>>;
+      deletePersonMaxWeight: (
+        personId: string,
+        exerciseId: string,
+      ) => Promise<ServiceResult<boolean>>;
+
+      // Rotation
+      createRotationSession: (
+        input: CreateRotationSessionInput,
+      ) => Promise<ServiceResult<{ sessionId: string }>>;
+      getSessionAssignments: (sessionId: string) => Promise<ServiceResult<any>>;
+      checkAndRotate: (
+        participantId: string,
+      ) => Promise<ServiceResult<{ rotated: boolean; nextExercise?: SessionParticipant }>>;
 
       // Seed database for testing
       seedDatabase: () => Promise<void>;

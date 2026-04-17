@@ -15,6 +15,7 @@ const tonyBench: Exercise = {
     { weight: 250, completed: false },
   ],
   currentSetIndex: 1,
+  barWeight: 45,
 };
 
 const sergioBench: Exercise = {
@@ -28,6 +29,7 @@ const sergioBench: Exercise = {
     { weight: 250, completed: false },
   ],
   currentSetIndex: 1,
+  barWeight: 45,
 };
 
 const steveDeadlift: Exercise = {
@@ -41,6 +43,7 @@ const steveDeadlift: Exercise = {
     { weight: 325, completed: false },
   ],
   currentSetIndex: 1,
+  barWeight: 45,
 };
 
 const noahDeadlift: Exercise = {
@@ -54,6 +57,7 @@ const noahDeadlift: Exercise = {
     { weight: 325, completed: false },
   ],
   currentSetIndex: 1,
+  barWeight: 45,
 };
 
 const maviSquat: Exercise = {
@@ -67,6 +71,7 @@ const maviSquat: Exercise = {
     { weight: 365, completed: false },
   ],
   currentSetIndex: 1,
+  barWeight: 45,
 };
 
 const kakesSquat: Exercise = {
@@ -80,6 +85,7 @@ const kakesSquat: Exercise = {
     { weight: 365, completed: false },
   ],
   currentSetIndex: 1,
+  barWeight: 45,
 };
 
 /**

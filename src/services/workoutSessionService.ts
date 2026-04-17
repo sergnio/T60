@@ -13,53 +13,23 @@ import type {
   ExerciseStation,
 } from "../db/types.js";
 
-/**
- * Calculates the actual loadable weight using available plates
- * Uses a greedy algorithm to fit plates (45, 25, 10, 5, 2.5) per side
- * Returns the total weight that can actually be loaded on the bar
- * @internal Exported for testing purposes
- */
-export function calculateLoadableWeight(targetWeight: number): number {
-  const barWeight = 45;
-  const plateWeights = [45, 25, 10, 5, 2.5];
-
-  // Weight to load on the bar (excluding bar itself)
-  const weightToLoad = Math.max(0, targetWeight - barWeight);
-
-  // Weight per side
-  const perSide = weightToLoad / 2;
-
-  // Greedily fit plates per side
-  let loadedPerSide = 0;
-  let remaining = perSide;
-
-  for (const plateWeight of plateWeights) {
-    const count = Math.floor(remaining / plateWeight);
-    if (count > 0) {
-      loadedPerSide += count * plateWeight;
-      remaining -= count * plateWeight;
-    }
-  }
-
-  // Total weight = bar + both sides
-  return barWeight + (loadedPerSide * 2);
-}
+import { calculateLoadableWeight } from "../utils/weightCalculation.js";
 
 /**
  * Calculates set weights based on max weight percentage
  * Set 1: 50%, Set 2: 75%, Sets 3-5: 85%
  * Ensures weights can actually be loaded with available plates
  */
-function calculateSetWeights(maxWeight: number): number[] {
+function calculateSetWeights(maxWeight: number, barWeight: number): number[] {
   const percentages = [0.5, 0.75, 0.85, 0.85, 0.85];
-  return percentages.map(percentage =>
-    calculateLoadableWeight(maxWeight * percentage)
+  return percentages.map((percentage) =>
+    calculateLoadableWeight(maxWeight * percentage, barWeight),
   );
 }
 
 /**
- * Generates sets config based on max weight
- * Throws if max weight is not found
+ * Generates sets config based on max weight and the exercise's bar weight.
+ * Throws if max weight is not found.
  */
 function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
   const maxWeightRecord = queries.getPersonMaxWeight(personId, exerciseId);
@@ -68,9 +38,12 @@ function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
     throw new Error(`MAX_WEIGHT_NOT_FOUND:${personId}:${exerciseId}`);
   }
 
-  const weights = calculateSetWeights(maxWeightRecord.max_weight);
+  // Use per-person bar weight from max weight record — NULL means no bar (0)
+  const barWeight = maxWeightRecord.bar_weight ?? 0;
+
+  const weights = calculateSetWeights(maxWeightRecord.max_weight, barWeight);
   console.log(
-    `[sessionService] Using max weight ${maxWeightRecord.max_weight} ${maxWeightRecord.weight_unit} for person ${personId}, exercise ${exerciseId}`,
+    `[sessionService] Using max weight ${maxWeightRecord.max_weight} ${maxWeightRecord.weight_unit}, bar weight ${barWeight} for person ${personId}, exercise ${exerciseId}`,
   );
 
   return [
@@ -85,11 +58,19 @@ function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
 export async function createWorkoutSession(
   input: CreateWorkoutSessionInput,
 ): Promise<ServiceResult<SessionWithParticipants>> {
-  console.log("[sessionService:createWorkoutSession] Creating session:", input.name, "with", input.stations?.length, "stations");
+  console.log(
+    "[sessionService:createWorkoutSession] Creating session:",
+    input.name,
+    "with",
+    input.stations?.length,
+    "stations",
+  );
   try {
     // Validate input
     if (!input.stations || input.stations.length === 0) {
-      console.warn("[sessionService:createWorkoutSession] Validation failed: no stations");
+      console.warn(
+        "[sessionService:createWorkoutSession] Validation failed: no stations",
+      );
       return {
         success: false,
         error: {
@@ -99,19 +80,12 @@ export async function createWorkoutSession(
       };
     }
 
-    if (input.stations.some((s) => !s.participantIds || s.participantIds.length === 0)) {
-      console.warn("[sessionService:createWorkoutSession] Validation failed: station missing participants");
-      return {
-        success: false,
-        error: {
-          code: ErrorCode.VALIDATION_ERROR,
-          message: "Each station must have at least one participant",
-        },
-      };
-    }
-
-    if (input.stations.some((s) => s.sets !== undefined && s.sets.length === 0)) {
-      console.warn("[sessionService:createWorkoutSession] Validation failed: station sets array is empty");
+    if (
+      input.stations.some((s) => s.sets !== undefined && s.sets.length === 0)
+    ) {
+      console.warn(
+        "[sessionService:createWorkoutSession] Validation failed: station sets array is empty",
+      );
       return {
         success: false,
         error: {
@@ -121,33 +95,107 @@ export async function createWorkoutSession(
       };
     }
 
-    // Process stations: for stations without sets, calculate based on max weights per participant
-    // If max weight is missing, this will throw an error that the UI can catch
-    const processedStations: ExerciseStation[] = [];
+    // Detect rotation scenario: multiple exercises means rotation workout
+    const allExerciseIds = [
+      ...new Set(input.stations.map((s) => s.exerciseId)),
+    ];
+    const isRotationWorkout = allExerciseIds.length > 1;
 
-    for (const station of input.stations) {
-      for (const participantId of station.participantIds) {
-        processedStations.push({
-          exerciseId: station.exerciseId,
-          participantIds: [participantId],
-          sets: station.sets ?? generateSetsConfig(participantId, station.exerciseId),
-        });
+    if (isRotationWorkout) {
+      console.log(
+        "[sessionService:createWorkoutSession] Detected rotation workout - creating ALL participant records for ALL exercises",
+      );
+
+      // For rotation workouts, create participant records for ALL people at ALL exercises
+      // Extract all unique participants and exercises
+      const allParticipantIds = [
+        ...new Set(input.stations.flatMap((s) => s.participantIds)),
+      ];
+
+      // Build a map of which exercise each participant starts at
+      const participantStartingExercise = new Map<string, string>();
+      for (const station of input.stations) {
+        for (const participantId of station.participantIds) {
+          if (!participantStartingExercise.has(participantId)) {
+            participantStartingExercise.set(participantId, station.exerciseId);
+          }
+        }
       }
+
+      // Create processed stations for ALL combinations (person × exercise)
+      const processedStations: ExerciseStation[] = [];
+
+      for (const participantId of allParticipantIds) {
+        const startingExerciseId =
+          participantStartingExercise.get(participantId)!;
+
+        for (const exerciseId of allExerciseIds) {
+          processedStations.push({
+            exerciseId,
+            participantIds: [participantId],
+            sets: generateSetsConfig(participantId, exerciseId),
+            // Mark if this is the starting exercise for this participant
+            isStartingExercise: exerciseId === startingExerciseId,
+          });
+        }
+      }
+
+      const processedInput: CreateWorkoutSessionInput = {
+        ...input,
+        stations: processedStations,
+      };
+
+      const session = queries.createWorkoutSession(processedInput);
+
+      // Create rotation config
+      queries.createRotationConfig(session.id, allExerciseIds, 2);
+
+      console.log(
+        "[sessionService:createWorkoutSession] Created rotation session:",
+        session.id,
+        "with",
+        allParticipantIds.length,
+        "participants and",
+        allExerciseIds.length,
+        "exercises",
+      );
+      return { success: true, data: session };
+    } else {
+      // Non-rotation workout: process normally (one exercise, multiple participants)
+      const processedStations: ExerciseStation[] = [];
+
+      for (const station of input.stations) {
+        for (const participantId of station.participantIds) {
+          processedStations.push({
+            exerciseId: station.exerciseId,
+            participantIds: [participantId],
+            sets:
+              station.sets ??
+              generateSetsConfig(participantId, station.exerciseId),
+          });
+        }
+      }
+
+      const processedInput: CreateWorkoutSessionInput = {
+        ...input,
+        stations: processedStations,
+      };
+
+      const session = queries.createWorkoutSession(processedInput);
+      console.log(
+        "[sessionService:createWorkoutSession] Created session:",
+        session.id,
+      );
+      return { success: true, data: session };
     }
-
-    const processedInput: CreateWorkoutSessionInput = {
-      ...input,
-      stations: processedStations,
-    };
-
-    const session = queries.createWorkoutSession(processedInput);
-    console.log("[sessionService:createWorkoutSession] Created session:", session.id);
-    return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:createWorkoutSession] Failed:", error);
 
     // Check if it's a max weight not found error
-    if (error instanceof Error && error.message.startsWith("MAX_WEIGHT_NOT_FOUND:")) {
+    if (
+      error instanceof Error &&
+      error.message.startsWith("MAX_WEIGHT_NOT_FOUND:")
+    ) {
       const [, personId, exerciseId] = error.message.split(":");
       return {
         success: false,
@@ -176,7 +224,10 @@ export async function getWorkoutSession(
   console.log("[sessionService:getWorkoutSession] Fetching session:", id);
   try {
     const session = queries.getWorkoutSession(id);
-    console.log("[sessionService:getWorkoutSession] Result:", session ? "found" : "not found");
+    console.log(
+      "[sessionService:getWorkoutSession] Result:",
+      session ? "found" : "not found",
+    );
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:getWorkoutSession] Failed:", error);
@@ -194,10 +245,15 @@ export async function getWorkoutSession(
 export async function getActiveWorkoutSession(): Promise<
   ServiceResult<WorkoutSession | null>
 > {
-  console.log("[sessionService:getActiveWorkoutSession] Fetching active session");
+  console.log(
+    "[sessionService:getActiveWorkoutSession] Fetching active session",
+  );
   try {
     const session = queries.getActiveWorkoutSession();
-    console.log("[sessionService:getActiveWorkoutSession] Result:", session ? `found (${session.id})` : "none active");
+    console.log(
+      "[sessionService:getActiveWorkoutSession] Result:",
+      session ? `found (${session.id})` : "none active",
+    );
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:getActiveWorkoutSession] Failed:", error);
@@ -218,7 +274,11 @@ export async function getAllWorkoutSessions(): Promise<
   console.log("[sessionService:getAllWorkoutSessions] Fetching all sessions");
   try {
     const sessions = queries.getAllWorkoutSessions();
-    console.log("[sessionService:getAllWorkoutSessions] Found", sessions.length, "sessions");
+    console.log(
+      "[sessionService:getAllWorkoutSessions] Found",
+      sessions.length,
+      "sessions",
+    );
     return { success: true, data: sessions };
   } catch (error) {
     console.error("[sessionService:getAllWorkoutSessions] Failed:", error);
@@ -237,10 +297,18 @@ export async function updateWorkoutSession(
   id: string,
   input: UpdateWorkoutSessionInput,
 ): Promise<ServiceResult<WorkoutSession | null>> {
-  console.log("[sessionService:updateWorkoutSession] Updating session:", id, "with:", JSON.stringify(input));
+  console.log(
+    "[sessionService:updateWorkoutSession] Updating session:",
+    id,
+    "with:",
+    JSON.stringify(input),
+  );
   try {
     const session = queries.updateWorkoutSession(id, input);
-    console.log("[sessionService:updateWorkoutSession] Updated:", session ? "success" : "not found");
+    console.log(
+      "[sessionService:updateWorkoutSession] Updated:",
+      session ? "success" : "not found",
+    );
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:updateWorkoutSession] Failed:", error);
@@ -261,7 +329,10 @@ export async function endWorkoutSession(
   console.log("[sessionService:endWorkoutSession] Ending session:", id);
   try {
     const session = queries.endWorkoutSession(id);
-    console.log("[sessionService:endWorkoutSession] Ended:", session ? "success" : "not found");
+    console.log(
+      "[sessionService:endWorkoutSession] Ended:",
+      session ? "success" : "not found",
+    );
     return { success: true, data: session };
   } catch (error) {
     console.error("[sessionService:endWorkoutSession] Failed:", error);

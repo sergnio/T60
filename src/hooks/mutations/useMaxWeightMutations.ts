@@ -13,12 +13,14 @@ export function useSetPersonMaxWeight() {
       exerciseId: string;
       maxWeight: number;
       weightUnit: WeightUnit;
+      barWeight?: number | null;
     }) => {
       const result = await window.database.setPersonMaxWeight(
         params.personId,
         params.exerciseId,
         params.maxWeight,
         params.weightUnit,
+        params.barWeight,
       );
       return result as PersonMaxWeight;
     },

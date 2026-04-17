@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type {
   CreateExerciseInput,
+  UpdateExerciseInput,
   CreatePersonInput,
   CreateRotationSessionInput,
   CreateSessionParticipantInput,
@@ -21,6 +22,8 @@ const databaseAPI = {
   createExercise: (input: CreateExerciseInput) =>
     ipcRenderer.invoke("db:createExercise", input),
   getAllExercises: () => ipcRenderer.invoke("db:getAllExercises"),
+  updateExercise: (id: string, input: UpdateExerciseInput) =>
+    ipcRenderer.invoke("db:updateExercise", id, input),
 
   // People
   createPerson: (input: CreatePersonInput) =>
@@ -87,6 +90,7 @@ const databaseAPI = {
     exerciseId: string,
     maxWeight: number,
     weightUnit: WeightUnit,
+    barWeight?: number | null,
   ) =>
     ipcRenderer.invoke(
       "db:setPersonMaxWeight",
@@ -94,6 +98,7 @@ const databaseAPI = {
       exerciseId,
       maxWeight,
       weightUnit,
+      barWeight,
     ),
   getPersonMaxWeights: (personId: string) =>
     ipcRenderer.invoke("db:getPersonMaxWeights", personId),

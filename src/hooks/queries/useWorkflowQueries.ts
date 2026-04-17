@@ -11,7 +11,7 @@ export function useActiveSessionWithParticipants() {
       const result = await window.database.getActiveSessionWithParticipants();
       return result.success ? result.data : null;
     },
-    refetchInterval: 5000, // Poll every 5s for live updates
+    refetchInterval: 1000, // Poll every 5s for live updates
   });
 }
 

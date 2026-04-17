@@ -15,6 +15,7 @@ const benchPress170: Exercise = {
     { weight: 170, completed: false },
   ],
   currentSetIndex: 2,
+  barWeight: 45,
 };
 
 const meta = {
@@ -57,5 +58,61 @@ export const ActiveWithPlates: Story = {
     personName: "TONY",
     exercise: benchPress170,
     isActive: true,
+  },
+};
+
+// Dumbbell exercise with no bar weight — plates show the full weight breakdown
+const dumbbellCurl50: Exercise = {
+  name: "Dumbbell Curl",
+  weightUnit: "lbs",
+  sets: [
+    { weight: 25, completed: true },
+    { weight: 35, completed: false },
+    { weight: 40, completed: false },
+    { weight: 40, completed: false },
+    { weight: 40, completed: false },
+  ],
+  currentSetIndex: 1,
+  barWeight: 0,
+};
+
+/**
+ * Dumbbell exercise with bar weight = 0.
+ * Demonstrates that the plate breakdown shows the full weight
+ * without subtracting a bar offset (TONY-99).
+ */
+export const DumbbellNoBar: Story = {
+  args: {
+    personName: "SERGIO",
+    exercise: dumbbellCurl50,
+    isActive: true,
+  },
+};
+
+// Custom bar weight (e.g. EZ curl bar at 25 lbs)
+const ezCurlBar: Exercise = {
+  name: "EZ Bar Curl",
+  weightUnit: "lbs",
+  sets: [
+    { weight: 65, completed: false },
+    { weight: 75, completed: false },
+    { weight: 85, completed: false },
+    { weight: 85, completed: false },
+    { weight: 85, completed: false },
+  ],
+  currentSetIndex: 0,
+  barWeight: 25,
+};
+
+/**
+ * Exercise with a custom bar weight (25 lb EZ curl bar).
+ * Shows that the plate breakdown correctly accounts for
+ * a non-standard bar weight (TONY-99).
+ */
+export const CustomBarWeight: Story = {
+  args: {
+    personName: "NOAH",
+    exercise: ezCurlBar,
+    isActive: false,
   },
 };

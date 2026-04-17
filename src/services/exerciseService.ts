@@ -4,7 +4,7 @@
 import * as queries from "../db/queries.js";
 import type { ServiceResult } from "./types/serviceResults.js";
 import { ErrorCode } from "./types/serviceResults.js";
-import type { Exercise, CreateExerciseInput } from "../db/types.js";
+import type { Exercise, CreateExerciseInput, UpdateExerciseInput } from "../db/types.js";
 
 export async function createExercise(
   input: CreateExerciseInput,
@@ -40,6 +40,28 @@ export async function getAllExercises(): Promise<ServiceResult<Exercise[]>> {
       error: {
         code: ErrorCode.DATABASE_ERROR,
         message: "Failed to get all exercises",
+        details: error,
+      },
+    };
+  }
+}
+
+export async function updateExercise(
+  id: string,
+  input: UpdateExerciseInput,
+): Promise<ServiceResult<Exercise | null>> {
+  console.log("[exerciseService:updateExercise] Updating exercise:", id);
+  try {
+    const exercise = queries.updateExercise(id, input);
+    console.log("[exerciseService:updateExercise] Updated:", exercise ? "success" : "not found");
+    return { success: true, data: exercise };
+  } catch (error) {
+    console.error("[exerciseService:updateExercise] Failed:", error);
+    return {
+      success: false,
+      error: {
+        code: ErrorCode.DATABASE_ERROR,
+        message: "Failed to update exercise",
         details: error,
       },
     };
