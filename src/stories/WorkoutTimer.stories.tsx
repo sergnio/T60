@@ -87,7 +87,7 @@ const createMockParticipant = (
 // Active workout - 6 participants, 3 active, 3 resting, early in workout
 const activeWorkoutParticipants: ParticipantWithSets[] = [
   createMockParticipant("Tony", "Bench Press", true, 2),
-  createMockParticipant("Steve", "Deadlift", true, 2),
+  createMockParticipant("Stephen", "Deadlift", true, 2),
   createMockParticipant("Victoria", "Back Squat", true, 2),
   createMockParticipant("Sergio", "Bench Press", false, 2),
   createMockParticipant("Noah", "Deadlift", false, 2),
@@ -97,7 +97,7 @@ const activeWorkoutParticipants: ParticipantWithSets[] = [
 // Just started - nobody has completed sets yet
 const justStartedParticipants: ParticipantWithSets[] = [
   createMockParticipant("Tony", "Bench Press", true, 0),
-  createMockParticipant("Steve", "Deadlift", true, 0),
+  createMockParticipant("Stephen", "Deadlift", true, 0),
   createMockParticipant("Victoria", "Back Squat", true, 0),
   createMockParticipant("Sergio", "Bench Press", false, 0),
   createMockParticipant("Noah", "Deadlift", false, 0),
@@ -107,7 +107,7 @@ const justStartedParticipants: ParticipantWithSets[] = [
 // Almost complete - 4/5 sets done
 const almostCompleteParticipants: ParticipantWithSets[] = [
   createMockParticipant("Tony", "Bench Press", true, 4),
-  createMockParticipant("Steve", "Deadlift", true, 4),
+  createMockParticipant("Stephen", "Deadlift", true, 4),
   createMockParticipant("Victoria", "Back Squat", true, 4),
   createMockParticipant("Sergio", "Bench Press", false, 4),
   createMockParticipant("Noah", "Deadlift", false, 4),
@@ -117,7 +117,7 @@ const almostCompleteParticipants: ParticipantWithSets[] = [
 // Completed - all sets done
 const completedParticipants: ParticipantWithSets[] = [
   createMockParticipant("Tony", "Bench Press", true, 5),
-  createMockParticipant("Steve", "Deadlift", true, 5),
+  createMockParticipant("Stephen", "Deadlift", true, 5),
   createMockParticipant("Victoria", "Back Squat", true, 5),
   createMockParticipant("Sergio", "Bench Press", false, 5),
   createMockParticipant("Noah", "Deadlift", false, 5),

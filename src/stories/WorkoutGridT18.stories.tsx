@@ -85,7 +85,11 @@ const kakesSquat: Exercise = {
 /**
  * Grid component showing full workout session
  */
-const WorkoutGridT18 = ({ onSetComplete }: { onSetComplete: (personName: string, setIndex: number) => void }) => (
+const WorkoutGridT18 = ({
+  onSetComplete,
+}: {
+  onSetComplete: (personName: string, setIndex: number) => void;
+}) => (
   <div className="flex flex-col gap-10 w-screen h-screen bg-gray-50 dark:bg-gray-900 p-10 items-center justify-center">
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 w-full max-w-[90vw]">
       {/* Active Users - Top 3 */}
@@ -105,10 +109,10 @@ const WorkoutGridT18 = ({ onSetComplete }: { onSetComplete: (personName: string,
           {steveDeadlift.name}
         </div>
         <WorkoutCardT18
-          personName="STEVE"
+          personName="STEPHEN"
           exercise={steveDeadlift}
           isActive
-          onSetComplete={(index) => onSetComplete("STEVE", index)}
+          onSetComplete={(index) => onSetComplete("STEPHEN", index)}
         />
       </div>
       <div className="flex flex-col gap-3">
