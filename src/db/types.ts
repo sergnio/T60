@@ -167,6 +167,7 @@ export interface ParticipantWithPerson extends SessionParticipant {
 export interface ParticipantWithSets extends SessionParticipant {
   person: Person;
   sets: Set[];
+  bar_weight: number | null;
 }
 
 export interface SessionWithParticipants extends WorkoutSession {

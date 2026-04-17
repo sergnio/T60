@@ -747,11 +747,15 @@ export function getParticipantWithSets(
   if (!person) return null;
 
   const sets = getSetsByParticipant(participantId);
+  const maxWeight = participant.exercise_id
+    ? getPersonMaxWeight(participant.person_id, participant.exercise_id)
+    : null;
 
   return {
     ...participant,
     person,
     sets,
+    bar_weight: maxWeight?.bar_weight ?? null,
   };
 }
 
@@ -765,10 +769,14 @@ export function getSessionWithParticipants(
   const participantsWithData = participants.map((p) => {
     const person = getPerson(p.person_id)!;
     const sets = getSetsByParticipant(p.id);
+    const maxWeight = p.exercise_id
+      ? getPersonMaxWeight(p.person_id, p.exercise_id)
+      : null;
     return {
       ...p,
       person,
       sets,
+      bar_weight: maxWeight?.bar_weight ?? null,
     };
   });
 
