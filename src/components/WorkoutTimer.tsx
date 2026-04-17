@@ -10,18 +10,21 @@ interface WorkoutTimerProps {
 }
 
 const INITIAL_REST_DURATION = 60; // 1:00 rest before workout starts
+// const INITIAL_REST_DURATION = 7; // 1:00 rest before workout starts
 const REST_DURATION = 90; // 1:30 rest between all sets
+// const REST_DURATION = 15; // 1:30 rest between all sets
 
 function getWorkingSetDuration(setIndex: number): number {
   // Sets 1 & 2 (index 0-1): 1:20, Sets 3-5 (index 2-4): 1:45
   if (setIndex <= 1) return 60 + 20;
+  // if (setIndex <= 1) return 10;
   return 60 + 45;
+  // return 14;
 }
 
 export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
   const [isInitialRest, setIsInitialRest] = useState(true);
   const [isRotationRest, setIsRotationRest] = useState(false);
-  const [isRestBetweenSets, setIsRestBetweenSets] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState(INITIAL_REST_DURATION);
   const [isRunning, setIsRunning] = useState(true);
 
@@ -42,7 +45,9 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       setIsRunning(false);
     } else if (!isRunning && !isInitialRest) {
       // Rotation happened — new active participants appeared, restart timer
-      console.log("[WorkoutTimer] New active exercises detected after rotation — restarting timer");
+      console.log(
+        "[WorkoutTimer] New active exercises detected after rotation — restarting timer",
+      );
       setIsRunning(true);
       setIsRotationRest(true);
       setTimeRemaining(REST_DURATION);
@@ -77,9 +82,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
       if (p.is_active) {
         // This participant's current set is about to be completed
-        return p.sets.every(
-          (s, i) => s.completed || i === p.current_set_index,
-        );
+        return p.sets.every((s, i) => s.completed || i === p.current_set_index);
       }
 
       // Non-is_active participants must already have all sets completed
@@ -194,9 +197,8 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       });
     }
 
-    // Start rest period between sets
-    setIsRestBetweenSets(true);
-    setTimeRemaining(REST_DURATION);
+    // No rest between participants — go straight to next working period
+    setTimeRemaining(getWorkingSetDuration(getCurrentSetIndex()));
   };
 
   // Get the current set index for duration calculation
@@ -256,10 +258,6 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       );
       setIsRotationRest(false);
       setTimeRemaining(getWorkingSetDuration(getCurrentSetIndex()));
-    } else if (isRestBetweenSets) {
-      // REST BETWEEN SETS COMPLETE - Start next working period
-      setIsRestBetweenSets(false);
-      setTimeRemaining(getWorkingSetDuration(getCurrentSetIndex()));
     } else {
       // Working period complete - complete sets and enter rest
       console.log(
@@ -273,7 +271,6 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
     allSetsComplete,
     isInitialRest,
     isRotationRest,
-    isRestBetweenSets,
   ]);
 
   // Countdown logic
@@ -289,7 +286,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
   return (
     <div className={styles.timerContainer}>
-      {(isInitialRest || isRotationRest || isRestBetweenSets) && (
+      {(isInitialRest || isRotationRest) && (
         <div className={styles.restIndicator}>REST TIMER</div>
       )}
       <div className={styles.timeDisplay}>{formatTime(timeRemaining)}</div>
