@@ -9,14 +9,20 @@ interface WorkoutTimerProps {
   participants: ParticipantWithSets[];
 }
 
-const REST_TIMER_DURATION = 7; // Initial rest period in seconds - CLEARLY A REST TIMER
-const PERIOD_DURATION = 5; // Regular workout period duration
+const REST_DURATION = 90; // 1:30 rest between all sets
+
+function getWorkingSetDuration(setIndex: number): number {
+  // Sets 1 & 2 (index 0-1): 1:20, Sets 3-5 (index 2-4): 1:45
+  if (setIndex <= 1) return 60 + 20;
+  return 60 + 45;
+}
 
 export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
-  const [isInitialRest, setIsInitialRest] = useState(true); // True during the initial 10-second rest timer
-  const [isRotationRest, setIsRotationRest] = useState(false); // True during rotation rest timer
-  const [hasInitialized, setHasInitialized] = useState(false); // Tracks if participants have been initialized
-  const [timeRemaining, setTimeRemaining] = useState(REST_TIMER_DURATION);
+  const [isInitialRest, setIsInitialRest] = useState(true);
+  const [isRotationRest, setIsRotationRest] = useState(false);
+  const [isRestBetweenSets, setIsRestBetweenSets] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(REST_DURATION);
   const [isRunning, setIsRunning] = useState(true);
 
   const completeSet = useCompleteSet();
@@ -116,11 +122,11 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       // Start rotation rest timer immediately (optimistic)
       console.log("[WorkoutTimer] Starting rotation rest timer");
       setIsRotationRest(true);
-      setTimeRemaining(REST_TIMER_DURATION);
+      setTimeRemaining(REST_DURATION);
       return; // Don't toggle participants - API will handle rotation
     }
 
-    // Toggle all participants' is_active flags (normal behavior)
+    // Toggle all participants' is_active flags and enter rest
     participants.forEach((participant) => {
       console.log(
         "gonna toggle!",
@@ -133,11 +139,20 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
         input: { is_active: !participant.is_active },
       });
     });
+
+    // Start rest period between sets
+    setIsRestBetweenSets(true);
+    setTimeRemaining(REST_DURATION);
+  };
+
+  // Get the current set index for duration calculation
+  const getCurrentSetIndex = () => {
+    const activeParticipants = participants.filter((p) => p.is_active);
+    return activeParticipants[0]?.current_set_index ?? 0;
   };
 
   // Handle period end when timer reaches 0
   useEffect(() => {
-    console.log("getting in here");
     if (timeRemaining > 0) return;
     if (allSetsComplete) {
       setIsRunning(false);
@@ -147,18 +162,21 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
     if (isInitialRest) {
       // REST TIMER COMPLETE - Initialize active participants
       handleRestTimerComplete();
-      setTimeRemaining(PERIOD_DURATION); // Start first workout period
+      setTimeRemaining(getWorkingSetDuration(0)); // Start first working set
     } else if (isRotationRest) {
-      // ROTATION REST COMPLETE - Resume normal period with new exercise (from API)
+      // ROTATION REST COMPLETE - Resume normal period with new exercise
       console.log(
         "[WorkoutTimer] Rotation rest complete - resuming normal period",
       );
       setIsRotationRest(false);
-      setTimeRemaining(PERIOD_DURATION); // Start workout period at new exercise
+      setTimeRemaining(getWorkingSetDuration(getCurrentSetIndex()));
+    } else if (isRestBetweenSets) {
+      // REST BETWEEN SETS COMPLETE - Start next working period
+      setIsRestBetweenSets(false);
+      setTimeRemaining(getWorkingSetDuration(getCurrentSetIndex()));
     } else {
-      // Regular period complete - toggle and start next period
+      // Working period complete - complete sets and enter rest
       handlePeriodComplete();
-      setTimeRemaining(PERIOD_DURATION); // Reset timer for next period
     }
   }, [
     timeRemaining,
@@ -166,6 +184,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
     allSetsComplete,
     isInitialRest,
     isRotationRest,
+    isRestBetweenSets,
   ]);
 
   // Countdown logic
@@ -181,7 +200,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
   return (
     <div className={styles.timerContainer}>
-      {(isInitialRest || isRotationRest) && (
+      {(isInitialRest || isRotationRest || isRestBetweenSets) && (
         <div className={styles.restIndicator}>REST TIMER</div>
       )}
       <div className={styles.timeDisplay}>{formatTime(timeRemaining)}</div>
