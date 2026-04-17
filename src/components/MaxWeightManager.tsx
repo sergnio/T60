@@ -15,6 +15,8 @@ export function MaxWeightManager() {
   const [editingExerciseId, setEditingExerciseId] = useState<string>("");
   const [editWeight, setEditWeight] = useState<string>("");
   const [editUnit, setEditUnit] = useState<WeightUnit>("lbs");
+  const [editingBarWeightId, setEditingBarWeightId] = useState<string>("");
+  const [editBarWeight, setEditBarWeight] = useState<string>("");
 
   const { data: people = [], isLoading: isPeopleLoading } = useAllPeople();
   const { data: exercises = [], isLoading: isExercisesLoading } =
@@ -73,6 +75,36 @@ export function MaxWeightManager() {
     setEditWeight("");
   };
 
+  const handleStartBarWeightEdit = (exerciseId: string, currentBarWeight: number | null) => {
+    setEditingBarWeightId(exerciseId);
+    setEditBarWeight(currentBarWeight != null ? String(currentBarWeight) : "");
+  };
+
+  const handleSaveBarWeight = async (exerciseId: string) => {
+    const parsed = editBarWeight.trim() === "" ? null : parseFloat(editBarWeight);
+    const existing = maxWeights.find((mw) => mw.exercise_id === exerciseId);
+    if (!selectedPersonId || !existing) return;
+
+    try {
+      await setMaxWeight.mutateAsync({
+        personId: selectedPersonId,
+        exerciseId,
+        maxWeight: existing.max_weight,
+        weightUnit: existing.weight_unit,
+        barWeight: parsed,
+      });
+      setEditingBarWeightId("");
+      setEditBarWeight("");
+    } catch {
+      // Mutation error handled by UI
+    }
+  };
+
+  const handleCancelBarWeight = () => {
+    setEditingBarWeightId("");
+    setEditBarWeight("");
+  };
+
   if (isPeopleLoading || isExercisesLoading) {
     return <div className={styles.loading}>Loading...</div>;
   }
@@ -114,9 +146,67 @@ export function MaxWeightManager() {
                   );
                   const isEditing = editingExerciseId === exercise.id;
 
+                  const isEditingBarWeight = editingBarWeightId === exercise.id;
+
+                  const personBarWeight = maxWeight?.bar_weight ?? null;
+
                   return (
                     <div key={exercise.id} className={styles.exerciseRow}>
-                      <div className={styles.exerciseName}>{exercise.name}</div>
+                      <div className={styles.exerciseInfo}>
+                        <div className={styles.exerciseName}>{exercise.name}</div>
+                        {/* Bar weight display/edit — only show when max weight is set */}
+                        {maxWeight && (
+                        <div className={styles.barWeightRow}>
+                          {!isEditingBarWeight ? (
+                            <>
+                              <span className={styles.barWeightLabel}>
+                                Bar: {personBarWeight != null ? `${personBarWeight} lbs` : "Not set"}
+                              </span>
+                              <button
+                                onClick={() => handleStartBarWeightEdit(exercise.id, personBarWeight)}
+                                className={styles.barWeightEditBtn}
+                              >
+                                {personBarWeight != null ? "Edit" : "Set"}
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <input
+                                type="number"
+                                value={editBarWeight}
+                                onChange={(e) => setEditBarWeight(e.target.value)}
+                                placeholder="lbs"
+                                className={styles.barWeightInputField}
+                                min="0"
+                                step="5"
+                                autoFocus
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    e.preventDefault();
+                                    handleSaveBarWeight(exercise.id);
+                                  }
+                                  if (e.key === "Escape") {
+                                    handleCancelBarWeight();
+                                  }
+                                }}
+                              />
+                              <button
+                                onClick={() => handleSaveBarWeight(exercise.id)}
+                                className={styles.barWeightSaveBtn}
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={handleCancelBarWeight}
+                                className={styles.barWeightCancelBtn}
+                              >
+                                Cancel
+                              </button>
+                            </>
+                          )}
+                        </div>
+                        )}
+                      </div>
 
                       {!isEditing && (
                         <>

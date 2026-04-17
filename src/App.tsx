@@ -2,8 +2,9 @@ import { useState } from "react";
 import type { Exercise } from "./stories/WorkoutCardT18";
 import { WorkoutCardT18 } from "./stories/WorkoutCardT18";
 import { useActiveSessionWithParticipants } from "./hooks/queries/useWorkflowQueries.ts";
+import { useAllExercises } from "./hooks/queries/useExercises.ts";
 import { useCompleteSet } from "./hooks/mutations/useSetMutations.ts";
-import type { ParticipantWithSets } from "./db/types.ts";
+import type { ParticipantWithSets, Exercise as DbExercise } from "./db/types.ts";
 import { SessionCreationForm } from "./components/SessionCreationForm.tsx";
 import { MaxWeightManager } from "./components/MaxWeightManager.tsx";
 import { WorkoutTimer } from "./components/WorkoutTimer.tsx";
@@ -12,7 +13,10 @@ import styles from "./App.module.scss";
 /**
  * Map database participant data to Exercise format for WorkoutCard
  */
-function mapParticipantToExercise(participant: ParticipantWithSets): Exercise {
+function mapParticipantToExercise(
+  participant: ParticipantWithSets,
+  barWeight: number = 45,
+): Exercise {
   return {
     name: participant.exercise_name,
     weightUnit: participant.weight_unit,
@@ -23,6 +27,7 @@ function mapParticipantToExercise(participant: ParticipantWithSets): Exercise {
         completed: set.completed,
       })),
     currentSetIndex: participant.current_set_index,
+    barWeight,
   };
 }
 
@@ -53,7 +58,13 @@ const App = () => {
     isLoading,
     error,
   } = useActiveSessionWithParticipants();
+  const { data: exercises = [] } = useAllExercises();
   const completeSetMutation = useCompleteSet();
+
+  // Build a lookup map for exercise bar weights so we can pass them to WorkoutCard
+  const exerciseBarWeightMap = new Map<string, number>(
+    exercises.map((ex: DbExercise) => [ex.id, ex.bar_weight ?? 0]),
+  );
 
   // Handle set completion
   const handleSetComplete = (participantId: string, setIndex: number) => {
@@ -111,17 +122,19 @@ const App = () => {
     );
   }
 
-  // Sort participants by ID to ensure consistent ordering for even/odd activation
-  const sortedParticipants = [...session.participants].sort((a, b) =>
-    a.id.localeCompare(b.id)
+  // Filter to only active participants and sort by ID for consistent ordering
+  // IMPORTANT: Display sort and is_active assignment both use id.localeCompare
+  // to ensure the visually-top participant is the active one. See TONY-80.
+  const activeParticipants = session.participants.filter(p => p.status === "active");
+  const sortedParticipants = [...activeParticipants].sort((a, b) =>
+    a.id.localeCompare(b.id),
   );
-
   const stations = groupByExercise(sortedParticipants);
 
   return (
     <div className={styles.container}>
-      {/* Timer */}
-      <WorkoutTimer participants={sortedParticipants} />
+      {/* Timer - pass ALL participants (including pending) for rotation detection */}
+      <WorkoutTimer participants={session.participants} />
       {/* Session name */}
       {session.name && (
         <div className={styles.sessionTitle}>{session.name}</div>
@@ -138,7 +151,10 @@ const App = () => {
             <div className={styles.exerciseTitle}>{station.exerciseName}</div>
             {station.participants.map((participant) => {
               const { id, is_active } = participant;
-              const exercise = mapParticipantToExercise(participant);
+              const barWt = participant.exercise_id
+                ? (exerciseBarWeightMap.get(participant.exercise_id) ?? 45)
+                : 45;
+              const exercise = mapParticipantToExercise(participant, barWt);
               return (
                 <WorkoutCardT18
                   key={id}

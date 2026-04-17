@@ -207,3 +207,79 @@
 .editFormWrapper {
   grid-column: 2 / 4;
 }
+
+// Bar weight editing within exercise rows
+.exerciseInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.barWeightRow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.barWeightLabel {
+  font-size: $font-size-sm;
+  color: $gray-500;
+
+  @media (prefers-color-scheme: dark) {
+    color: $gray-400;
+  }
+}
+
+.barWeightEditBtn {
+  padding: 0.125rem 0.5rem;
+  border-radius: $radius-lg;
+  border: none;
+  background: transparent;
+  color: $blue-600;
+  font-size: $font-size-sm;
+  cursor: pointer;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.barWeightInputField {
+  width: 4.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid $gray-300;
+  border-radius: $radius-lg;
+  background: white;
+  color: $gray-900;
+  font-size: $font-size-sm;
+
+  @media (prefers-color-scheme: dark) {
+    border-color: $gray-600;
+    background: $gray-700;
+    color: white;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $blue-600;
+  }
+}
+
+.barWeightSaveBtn,
+.barWeightCancelBtn {
+  padding: 0.125rem 0.5rem;
+  border-radius: $radius-lg;
+  border: none;
+  font-size: $font-size-sm;
+  cursor: pointer;
+}
+
+.barWeightSaveBtn {
+  background-color: $green-500;
+  color: white;
+}
+
+.barWeightCancelBtn {
+  background: transparent;
+  color: $gray-500;
+}

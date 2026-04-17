@@ -31,42 +31,20 @@ export interface SessionAssignments {
   }[];
 }
 
-/**
- * Calculates the actual loadable weight using available plates
- */
-function calculateLoadableWeight(targetWeight: number): number {
-  const barWeight = 45;
-  const plateWeights = [45, 25, 10, 5, 2.5];
-
-  const weightToLoad = Math.max(0, targetWeight - barWeight);
-  const perSide = weightToLoad / 2;
-
-  let loadedPerSide = 0;
-  let remaining = perSide;
-
-  for (const plateWeight of plateWeights) {
-    const count = Math.floor(remaining / plateWeight);
-    if (count > 0) {
-      loadedPerSide += count * plateWeight;
-      remaining -= count * plateWeight;
-    }
-  }
-
-  return barWeight + (loadedPerSide * 2);
-}
+import { calculateLoadableWeight } from "../utils/weightCalculation.js";
 
 /**
  * Calculates set weights based on max weight percentage
  */
-function calculateSetWeights(maxWeight: number): number[] {
+function calculateSetWeights(maxWeight: number, barWeight: number): number[] {
   const percentages = [0.5, 0.75, 0.85, 0.85, 0.85];
   return percentages.map(percentage =>
-    calculateLoadableWeight(maxWeight * percentage)
+    calculateLoadableWeight(maxWeight * percentage, barWeight)
   );
 }
 
 /**
- * Generates sets config based on max weight
+ * Generates sets config based on max weight and the exercise's bar weight.
  */
 function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
   const maxWeightRecord = queries.getPersonMaxWeight(personId, exerciseId);
@@ -75,7 +53,10 @@ function generateSetsConfig(personId: string, exerciseId: string): SetConfig[] {
     throw new Error(`MAX_WEIGHT_NOT_FOUND:${personId}:${exerciseId}`);
   }
 
-  const weights = calculateSetWeights(maxWeightRecord.max_weight);
+  // Use per-person bar weight from max weight record — NULL means no bar (0)
+  const barWeight = maxWeightRecord.bar_weight ?? 0;
+
+  const weights = calculateSetWeights(maxWeightRecord.max_weight, barWeight);
 
   return [
     { weight: weights[0], reps: 10 },
@@ -162,11 +143,15 @@ export async function createRotationSession(
       // Track which participant is assigned to which exercise initially
       let participantIndex = 0;
 
+      console.log(`[rotationService] Creating participant records for ${input.participantIds.length} people across ${input.exerciseIds.length} exercises`);
+
       for (const personId of input.participantIds) {
         const person = queries.getPerson(personId);
         if (!person) {
           throw new Error(`Person not found: ${personId}`);
         }
+
+        console.log(`[rotationService] Creating records for person: ${person.name} (participantIndex=${participantIndex})`);
 
         // Create a participant record for each exercise in rotation
         for (let rotationOrder = 0; rotationOrder < input.exerciseIds.length; rotationOrder++) {
@@ -177,9 +162,15 @@ export async function createRotationSession(
           // - Assign first maxConcurrent participants to exercise 0 (active)
           // - Next maxConcurrent participants to exercise 1 (active), etc.
           const exerciseSlot = Math.floor(participantIndex / maxConcurrent);
-          const isInitiallyActive = rotationOrder === exerciseSlot;
+          const positionWithinSlot = participantIndex % maxConcurrent;
+          const isAssignedToExercise = rotationOrder === exerciseSlot;
+          // Only the first person at each exercise starts as is_active
+          // (the second person rests until it's their turn)
+          const isFirstAtExercise = isAssignedToExercise && positionWithinSlot === 0;
 
           const participantRecordId = crypto.randomUUID();
+
+          console.log(`[rotationService]   - Exercise: ${exercise.name}, rotationOrder=${rotationOrder}, status=${isAssignedToExercise ? "active" : "pending"}, is_active=${isFirstAtExercise}`);
 
           getDatabase().prepare(`
             INSERT INTO session_participants
@@ -194,16 +185,19 @@ export async function createRotationSession(
             exerciseId,
             input.weightUnit,
             0, // current_set_index
-            isInitiallyActive ? 1 : 0, // is_active
+            isFirstAtExercise ? 1 : 0, // is_active - only first person at exercise
             rotationOrder,
-            isInitiallyActive ? "active" : "pending",
-            isInitiallyActive ? now : null,
+            isAssignedToExercise ? "active" : "pending", // status - both partners are 'active'
+            isAssignedToExercise ? now : null,
             now,
             now,
           );
 
-          // 4. Create sets only for initially active participants
-          if (isInitiallyActive) {
+          console.log(`[rotationService]     ✓ Participant record created`);
+
+          // 4. Create sets for all participants assigned to this exercise
+          if (isAssignedToExercise) {
+            console.log(`[rotationService]     Creating ${5} sets for active assignment`);
             const setsConfig = generateSetsConfig(personId, exerciseId);
             for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
               const setId = crypto.randomUUID();
@@ -221,11 +215,21 @@ export async function createRotationSession(
                 now,
               );
             }
+            console.log(`[rotationService]     ✓ ${setsConfig.length} sets created`);
+          } else {
+            console.log(`[rotationService]     Skipping set creation for pending exercise (will create during rotation)`);
           }
         }
 
         participantIndex++;
       }
+
+      // Correct is_active to match display sort order at all exercises (TONY-80)
+      for (const exerciseId of input.exerciseIds) {
+        queries.correctIsActiveForExercise(sessionId, exerciseId);
+      }
+
+      console.log(`[rotationService] ✓ All participant records created successfully`);
     })();
 
     console.log(`[rotationService] Created rotation session: ${sessionId}`);
@@ -381,6 +385,133 @@ export async function rotateAllParticipantsAtExercise(
       error: {
         code: ErrorCode.DATABASE_ERROR,
         message: "Failed to rotate all participants at exercise",
+        details: error,
+      },
+    };
+  }
+}
+
+/**
+ * Finds the next exercise in rotation for a person, respecting rotation order with wrap-around.
+ * E.g., if current is rotation_order=1, picks pending with order 2 first, then wraps to 0.
+ */
+function getNextInRotation(
+  sessionId: string,
+  personId: string,
+  currentRotationOrder: number,
+): SessionParticipant | null {
+  const incomplete = queries.getIncompleteExercises(sessionId, personId);
+  const pending = incomplete.filter((p) => p.status === "pending");
+
+  if (pending.length === 0) return null;
+
+  // First: next pending after current rotation_order
+  const next = pending.find((p) => p.rotation_order > currentRotationOrder);
+  // Wrap around if none found
+  return next || pending[0];
+}
+
+/**
+ * Rotates ALL active participants across all exercises in a session simultaneously.
+ * Called when every active participant at every exercise has completed all their sets.
+ */
+export async function rotateAllParticipantsInSession(
+  sessionId: string,
+): Promise<ServiceResult<{ rotated: boolean; participantCount: number }>> {
+  try {
+    const allParticipants = queries.getSessionParticipants(sessionId);
+    const activeParticipants = allParticipants.filter((p) => p.status === "active");
+
+    if (activeParticipants.length === 0) {
+      return { success: true, data: { rotated: false, participantCount: 0 } };
+    }
+
+    console.log(
+      `[rotationService] Rotating ALL ${activeParticipants.length} participants in session ${sessionId}`
+    );
+
+    const db = getDatabase();
+    db.transaction(() => {
+      const now = Date.now();
+
+      // Phase 1: Mark all current exercises as completed
+      for (const participant of activeParticipants) {
+        queries.updateSessionParticipant(participant.id, {
+          status: "completed",
+          completed_at: now,
+        });
+      }
+
+      // Phase 2: Activate next exercises with correct rotation order
+      const activatedExerciseIds = new Set<string>();
+      for (const participant of activeParticipants) {
+        const next = getNextInRotation(
+          sessionId,
+          participant.person_id,
+          participant.rotation_order,
+        );
+
+        if (!next) {
+          console.log(
+            `[rotationService] No more exercises for ${participant.person_id}`
+          );
+          continue;
+        }
+
+        queries.updateSessionParticipant(next.id, {
+          status: "active",
+          started_at: now,
+        });
+        if (next.exercise_id) {
+          activatedExerciseIds.add(next.exercise_id);
+        }
+
+        // Before creating sets, check if they already exist
+        const existingSets = queries.getSetsByParticipant(next.id);
+
+        if (existingSets.length === 0) {
+          // Sets don't exist yet - create them
+          console.log(
+            `[rotationService] Creating ${5} sets for ${next.exercise_name}`
+          );
+          const setsConfig = generateSetsConfig(next.person_id, next.exercise_id!);
+          for (let setIndex = 0; setIndex < setsConfig.length; setIndex++) {
+            queries.createSet({
+              participant_id: next.id,
+              set_index: setIndex,
+              weight: setsConfig[setIndex].weight,
+              reps: setsConfig[setIndex].reps,
+            });
+          }
+        } else {
+          // Sets already exist - skip creation
+          console.log(
+            `[rotationService] Sets already exist for ${next.exercise_name} (${existingSets.length} sets), skipping creation`
+          );
+        }
+
+        console.log(
+          `[rotationService] Rotated ${participant.person_id} from ${participant.exercise_name} to ${next.exercise_name}`
+        );
+      }
+
+      // Phase 3: Correct is_active to match display sort order at all activated exercises (TONY-80)
+      for (const exerciseId of activatedExerciseIds) {
+        queries.correctIsActiveForExercise(sessionId, exerciseId);
+      }
+    })();
+
+    return {
+      success: true,
+      data: { rotated: true, participantCount: activeParticipants.length },
+    };
+  } catch (error) {
+    console.error("[rotationService] Failed to rotate all participants in session:", error);
+    return {
+      success: false,
+      error: {
+        code: ErrorCode.DATABASE_ERROR,
+        message: "Failed to rotate all participants in session",
         details: error,
       },
     };

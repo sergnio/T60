@@ -35,6 +35,9 @@ const registerServiceHandlers = () => {
     exerciseService.createExercise(input),
   );
   ipcMain.handle("db:getAllExercises", () => exerciseService.getAllExercises());
+  ipcMain.handle("db:updateExercise", (_, id, input) =>
+    exerciseService.updateExercise(id, input),
+  );
 
   // People
   ipcMain.handle("db:createPerson", (_, input) =>
@@ -124,12 +127,13 @@ const registerServiceHandlers = () => {
   // Person Max Weights
   ipcMain.handle(
     "db:setPersonMaxWeight",
-    (_, personId, exerciseId, maxWeight, weightUnit) =>
+    (_, personId, exerciseId, maxWeight, weightUnit, barWeight) =>
       maxWeightService.setPersonMaxWeight(
         personId,
         exerciseId,
         maxWeight,
         weightUnit,
+        barWeight,
       ),
   );
   ipcMain.handle("db:getPersonMaxWeights", (_, personId) =>
