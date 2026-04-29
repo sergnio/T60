@@ -35,5 +35,3 @@ If you see errors like `Cannot find module '.../node_modules/dist/node/cli.js'` 
 ```
 rm -rf node_modules && npm install
 ```
-
-![](./demo.png)
