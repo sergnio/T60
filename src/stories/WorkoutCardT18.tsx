@@ -20,8 +20,8 @@ export interface Exercise {
   sets: WorkoutSet[];
   /** Index of the current set being performed */
   currentSetIndex: number;
-  /** Weight of the bar in lbs (0 for non-barbell exercises like dumbbells/cables) */
-  barWeight: number;
+  /** Weight of the bar in lbs (null = not set, 0 = no bar, 45 = standard barbell) */
+  barWeight: number | null;
 }
 
 /**
@@ -104,7 +104,7 @@ export const WorkoutCardT18 = ({
   const currentSet = exercise.sets[clampedSetIndex];
   const currentWeight = currentSet?.weight || 0;
   const barWeight = exercise.barWeight;
-  const plates = calculatePlateBreakdown(currentWeight, barWeight);
+  const plates = barWeight != null ? calculatePlateBreakdown(currentWeight, barWeight) : [];
 
   return (
     <div className={`${styles.card} ${isActive ? styles.active : ""}`}>
@@ -125,7 +125,7 @@ export const WorkoutCardT18 = ({
           <div className={styles.barWeight}>
             <div className={styles.label}>Bar</div>
             <div className={styles.value}>
-              {barWeight} {exercise.weightUnit}
+              {barWeight != null ? `${barWeight} ${exercise.weightUnit}` : "--"}
             </div>
           </div>
 

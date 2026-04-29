@@ -52,42 +52,52 @@ describe("calculateLoadableWeight", () => {
     });
   });
 
-  describe("Rounding down scenarios", () => {
-    it("should round down when target has fractional component", () => {
-      // 45 bar + 2.6 per side → can only load 2.5 per side
-      // Result: 45 + 2.5×2 = 50
-      expect(calculateLoadableWeight(50.2, BAR_WEIGHT)).toBe(50);
-    });
-
-    it("should round down the original bug scenario (155 * 85%)", () => {
-      // 155 * 0.85 = 131.75
-      // Should load: 45 bar + (25+10+5+2.5)×2 = 45 + 42.5×2 = 130
-      expect(calculateLoadableWeight(131.75, BAR_WEIGHT)).toBe(130);
-    });
-
-    it("should round down 50% of 155", () => {
-      // 155 * 0.5 = 77.5
-      // Per side: 16.25 → can load 1×10 + 1×5 = 15 per side
-      // Should load: 45 bar + 15×2 = 75
-      expect(calculateLoadableWeight(77.5, BAR_WEIGHT)).toBe(75);
-    });
-
-    it("should round down 75% of 155", () => {
-      // 155 * 0.75 = 116.25
-      // Should load: 45 bar + (25+10)×2 = 45 + 35×2 = 115
-      expect(calculateLoadableWeight(116.25, BAR_WEIGHT)).toBe(115);
-    });
-
-    it("should round down when remaining weight is less than smallest plate", () => {
-      // 45 bar + 5.3 per side → can only load 5 per side
+  describe("Ceiling rounding scenarios", () => {
+    it("should round up when target has fractional component", () => {
+      // 45 bar + 2.6 per side → floor loads 2.5, remainder 0.1 → ceil adds 2.5
       // Result: 45 + 5×2 = 55
-      expect(calculateLoadableWeight(55.6, BAR_WEIGHT)).toBe(55);
+      expect(calculateLoadableWeight(50.2, BAR_WEIGHT)).toBe(55);
     });
 
-    it("should handle multiple rounding scenarios", () => {
-      // 45 bar + 47.7 per side → can load 25+10+10+2.5 = 47.5 per side
-      // Result: 45 + 47.5×2 = 140
-      expect(calculateLoadableWeight(140.4, BAR_WEIGHT)).toBe(140);
+    it("should round up the original bug scenario (155 * 85%)", () => {
+      // 155 * 0.85 = 131.75
+      // Per side: 43.375 → floor loads 25+10+5+2.5 = 42.5, remainder 0.875 → ceil adds 2.5
+      // Result: 45 + 45×2 = 135
+      expect(calculateLoadableWeight(131.75, BAR_WEIGHT)).toBe(135);
+    });
+
+    it("should round up 50% of 155", () => {
+      // 155 * 0.5 = 77.5
+      // Per side: 16.25 → floor loads 10+5 = 15, remainder 1.25 → ceil adds 2.5
+      // Result: 45 + 17.5×2 = 80
+      expect(calculateLoadableWeight(77.5, BAR_WEIGHT)).toBe(80);
+    });
+
+    it("should round up 75% of 155", () => {
+      // 155 * 0.75 = 116.25
+      // Per side: 35.625 → floor loads 25+10 = 35, remainder 0.625 → ceil adds 2.5
+      // Result: 45 + 37.5×2 = 120
+      expect(calculateLoadableWeight(116.25, BAR_WEIGHT)).toBe(120);
+    });
+
+    it("should round up when remaining weight is less than smallest plate", () => {
+      // 45 bar + 5.3 per side → floor loads 5, remainder 0.3 → ceil adds 2.5
+      // Result: 45 + 7.5×2 = 60
+      expect(calculateLoadableWeight(55.6, BAR_WEIGHT)).toBe(60);
+    });
+
+    it("should round up with multiple plates and small remainder", () => {
+      // 45 bar + 47.7 per side → floor loads 25+10+10+2.5 = 47.5, remainder 0.2 → ceil adds 2.5
+      // Result: 45 + 50×2 = 145
+      expect(calculateLoadableWeight(140.4, BAR_WEIGHT)).toBe(145);
+    });
+
+    it("should NOT round up when weight falls exactly on a plate boundary", () => {
+      // Exact fits should remain unchanged — no remainder means no rounding
+      expect(calculateLoadableWeight(50, BAR_WEIGHT)).toBe(50);
+      expect(calculateLoadableWeight(55, BAR_WEIGHT)).toBe(55);
+      expect(calculateLoadableWeight(135, BAR_WEIGHT)).toBe(135);
+      expect(calculateLoadableWeight(220, BAR_WEIGHT)).toBe(220);
     });
   });
 
@@ -136,9 +146,9 @@ describe("calculateLoadableWeight", () => {
 
     it("should correctly calculate percentages for 155 max weight", () => {
       const result = testMaxWeight(155);
-      expect(result.at50).toBe(75); // 155 * 0.5 = 77.5 → 75
-      expect(result.at75).toBe(115); // 155 * 0.75 = 116.25 → 115
-      expect(result.at85).toBe(130); // 155 * 0.85 = 131.75 → 130
+      expect(result.at50).toBe(80); // 155 * 0.5 = 77.5 → 80 (ceil)
+      expect(result.at75).toBe(120); // 155 * 0.75 = 116.25 → 120 (ceil)
+      expect(result.at85).toBe(135); // 155 * 0.85 = 131.75 → 135 (ceil)
     });
 
     it("should correctly calculate percentages for 200 max weight", () => {
@@ -150,9 +160,9 @@ describe("calculateLoadableWeight", () => {
 
     it("should correctly calculate percentages for 225 max weight", () => {
       const result = testMaxWeight(225);
-      expect(result.at50).toBe(110); // 225 * 0.5 = 112.5 → 110
-      expect(result.at75).toBe(165); // 225 * 0.75 = 168.75 → 165
-      expect(result.at85).toBe(190); // 225 * 0.85 = 191.25 → 190
+      expect(result.at50).toBe(115); // 225 * 0.5 = 112.5 → 115 (ceil)
+      expect(result.at75).toBe(170); // 225 * 0.75 = 168.75 → 170 (ceil)
+      expect(result.at85).toBe(195); // 225 * 0.85 = 191.25 → 195 (ceil)
     });
 
     it("should correctly calculate percentages for 300 max weight", () => {
@@ -164,9 +174,9 @@ describe("calculateLoadableWeight", () => {
 
     it("should correctly calculate percentages for 135 max weight (beginner)", () => {
       const result = testMaxWeight(135);
-      expect(result.at50).toBe(65); // 135 * 0.5 = 67.5 → 65
-      expect(result.at75).toBe(100); // 135 * 0.75 = 101.25 → 100
-      expect(result.at85).toBe(110); // 135 * 0.85 = 114.75 → 110
+      expect(result.at50).toBe(70); // 135 * 0.5 = 67.5 → 70 (ceil)
+      expect(result.at75).toBe(105); // 135 * 0.75 = 101.25 → 105 (ceil)
+      expect(result.at85).toBe(115); // 135 * 0.85 = 114.75 → 115 (ceil)
     });
   });
 
@@ -179,14 +189,16 @@ describe("calculateLoadableWeight", () => {
       expect(calculateLoadableWeight(0, BAR_WEIGHT)).toBe(BAR_WEIGHT);
     });
 
-    it("should handle fractional bar weight scenarios", () => {
-      expect(calculateLoadableWeight(45.1, BAR_WEIGHT)).toBe(45);
-      expect(calculateLoadableWeight(47.4, BAR_WEIGHT)).toBe(45);
+    it("should round up fractional bar weight scenarios", () => {
+      // 45.1: per side = 0.05 → remainder > 0 → ceil adds 2.5 per side
+      expect(calculateLoadableWeight(45.1, BAR_WEIGHT)).toBe(50);
+      // 47.4: per side = 1.2 → remainder > 0 → ceil adds 2.5 per side
+      expect(calculateLoadableWeight(47.4, BAR_WEIGHT)).toBe(50);
     });
 
-    it("should handle very small additions above bar weight", () => {
-      // 45 + 0.1 per side → cannot load any plates
-      expect(calculateLoadableWeight(45.2, BAR_WEIGHT)).toBe(45);
+    it("should round up very small additions above bar weight", () => {
+      // 45 + 0.1 per side → remainder > 0 → ceil adds 2.5 per side
+      expect(calculateLoadableWeight(45.2, BAR_WEIGHT)).toBe(50);
     });
   });
 

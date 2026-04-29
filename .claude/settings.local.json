@@ -40,7 +40,10 @@
       "Bash(git add:*)",
       "Bash(linear issue:*)",
       "Bash(find . -name *.linear* -o -name *linear*config*)",
-      "Bash(find . -type f \\\\\\(-name package.json -o -name pyproject.toml -o -name .env* \\\\\\))"
+      "Bash(find . -type f \\\\\\(-name package.json -o -name pyproject.toml -o -name .env* \\\\\\))",
+      "Bash(find /Users/sergio/projects/T60 -type f \\\\\\(-name *.sql -o -name *seed* -o -name *migrat* \\\\\\))",
+      "Bash(grep -r \"Steven\\\\|STEVEN\" /Users/sergio/projects/T60 --include=*.ts --include=*.tsx --include=*.js --include=*.sql --include=*.json --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git)",
+      "Bash(grep:*)"
     ]
   }
 }

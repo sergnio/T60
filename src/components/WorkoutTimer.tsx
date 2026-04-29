@@ -9,14 +9,23 @@ interface WorkoutTimerProps {
   participants: ParticipantWithSets[];
 }
 
-const REST_TIMER_DURATION = 4; // Initial rest period in seconds - CLEARLY A REST TIMER
-const PERIOD_DURATION = 2; // Regular workout period duration
+const INITIAL_REST_DURATION = 60; // 1:00 rest before workout starts
+// const INITIAL_REST_DURATION = 7; // 1:00 rest before workout starts
+const REST_DURATION = 90; // 1:30 rest between all sets
+// const REST_DURATION = 15; // 1:30 rest between all sets
+
+function getWorkingSetDuration(setIndex: number): number {
+  // Sets 1 & 2 (index 0-1): 1:20, Sets 3-5 (index 2-4): 1:45
+  if (setIndex <= 1) return 60 + 20;
+  // if (setIndex <= 1) return 10;
+  return 60 + 45;
+  // return 14;
+}
 
 export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
-  const [isInitialRest, setIsInitialRest] = useState(true); // True during the initial 10-second rest timer
-  const [isRotationRest, setIsRotationRest] = useState(false); // True during rotation rest timer
-  const [hasInitialized, setHasInitialized] = useState(false); // Tracks if participants have been initialized
-  const [timeRemaining, setTimeRemaining] = useState(REST_TIMER_DURATION);
+  const [isInitialRest, setIsInitialRest] = useState(true);
+  const [isRotationRest, setIsRotationRest] = useState(false);
+  const [timeRemaining, setTimeRemaining] = useState(INITIAL_REST_DURATION);
   const [isRunning, setIsRunning] = useState(true);
 
   const completeSet = useCompleteSet();
@@ -36,17 +45,18 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       setIsRunning(false);
     } else if (!isRunning && !isInitialRest) {
       // Rotation happened — new active participants appeared, restart timer
-      console.log("[WorkoutTimer] New active exercises detected after rotation — restarting timer");
+      console.log(
+        "[WorkoutTimer] New active exercises detected after rotation — restarting timer",
+      );
       setIsRunning(true);
       setIsRotationRest(true);
-      setTimeRemaining(REST_TIMER_DURATION);
+      setTimeRemaining(REST_DURATION);
     }
   }, [allSetsComplete, isRunning, isInitialRest]);
 
   // Handle rest timer completion - is_active is already set correctly by createRotationSession
   const handleRestTimerComplete = () => {
     setIsInitialRest(false);
-    setHasInitialized(true);
   };
 
   // Optimistic rotation detection: predict whether the sets we're about to complete
@@ -72,9 +82,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
 
       if (p.is_active) {
         // This participant's current set is about to be completed
-        return p.sets.every(
-          (s, i) => s.completed || i === p.current_set_index,
-        );
+        return p.sets.every((s, i) => s.completed || i === p.current_set_index);
       }
 
       // Non-is_active participants must already have all sets completed
@@ -147,7 +155,7 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
       // Start rotation rest timer immediately (optimistic)
       console.log("[WorkoutTimer] Starting rotation rest timer");
       setIsRotationRest(true);
-      setTimeRemaining(REST_TIMER_DURATION);
+      setTimeRemaining(REST_DURATION);
       return; // Don't toggle participants - API will handle rotation
     }
 
@@ -188,6 +196,15 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
         });
       });
     }
+
+    // No rest between participants — go straight to next working period
+    setTimeRemaining(getWorkingSetDuration(getCurrentSetIndex()));
+  };
+
+  // Get the current set index for duration calculation
+  const getCurrentSetIndex = () => {
+    const activeParticipants = participants.filter((p) => p.is_active);
+    return activeParticipants[0]?.current_set_index ?? 0;
   };
 
   // Guard against re-entry: when mutations resolve and `participants` changes,
@@ -233,21 +250,20 @@ export const WorkoutTimer = ({ participants }: WorkoutTimerProps) => {
         "[WorkoutTimer] Initial rest timer complete - STARTING FIRST WORKOUT PERIOD!!!",
       );
       handleRestTimerComplete();
-      setTimeRemaining(PERIOD_DURATION); // Start first workout period
+      setTimeRemaining(getWorkingSetDuration(0)); // Start first working set
     } else if (isRotationRest) {
-      // ROTATION REST COMPLETE - Resume normal period with new exercise (from API)
+      // ROTATION REST COMPLETE - Resume normal period with new exercise
       console.log(
         "[WorkoutTimer] Rotation rest complete - resuming normal period with new exercise",
       );
       setIsRotationRest(false);
-      setTimeRemaining(PERIOD_DURATION); // Start workout period at new exercise
+      setTimeRemaining(getWorkingSetDuration(getCurrentSetIndex()));
     } else {
-      // Regular period complete - toggle and start next period
+      // Working period complete - complete sets and enter rest
       console.log(
         "[WorkoutTimer] Regular period complete - calling handlePeriodComplete",
       );
       handlePeriodComplete();
-      setTimeRemaining(PERIOD_DURATION); // Reset timer for next period
     }
   }, [
     timeRemaining,

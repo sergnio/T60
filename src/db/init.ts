@@ -36,7 +36,9 @@ function runMigrations(database: Database.Database): void {
 
   // Create person_max_weights table if missing
   const tables = database
-    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='person_max_weights'")
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='person_max_weights'",
+    )
     .all() as { name: string }[];
   if (tables.length === 0) {
     console.log("Migration: creating person_max_weights table");
@@ -59,9 +61,10 @@ function runMigrations(database: Database.Database): void {
   }
 
   // Migrate people table to add DEFAULT values
-  const peopleColumns = database
-    .prepare("PRAGMA table_info(people)")
-    .all() as { name: string; dflt_value: string | null }[];
+  const peopleColumns = database.prepare("PRAGMA table_info(people)").all() as {
+    name: string;
+    dflt_value: string | null;
+  }[];
   const idColumn = peopleColumns.find((col) => col.name === "id");
   const needsPeopleMigration = idColumn && idColumn.dflt_value === null;
 
@@ -96,7 +99,8 @@ function runMigrations(database: Database.Database): void {
     .prepare("PRAGMA table_info(exercises)")
     .all() as { name: string; dflt_value: string | null }[];
   const exerciseIdColumn = exerciseColumns.find((col) => col.name === "id");
-  const needsExerciseMigration = exerciseIdColumn && exerciseIdColumn.dflt_value === null;
+  const needsExerciseMigration =
+    exerciseIdColumn && exerciseIdColumn.dflt_value === null;
 
   if (needsExerciseMigration) {
     console.log("Migration: adding DEFAULT values to exercises table");
@@ -125,22 +129,50 @@ function runMigrations(database: Database.Database): void {
   const participantColumns = database
     .prepare("PRAGMA table_info(session_participants)")
     .all() as { name: string }[];
-  const hasRotationOrder = participantColumns.some((col) => col.name === "rotation_order");
+  const hasRotationOrder = participantColumns.some(
+    (col) => col.name === "rotation_order",
+  );
 
   if (!hasRotationOrder) {
     console.log("Migration: adding rotation support to session_participants");
 
     // SQLite doesn't support adding columns with CHECK constraints via ALTER TABLE
     // Run each ALTER TABLE separately to ensure they complete
-    database.prepare("ALTER TABLE session_participants ADD COLUMN rotation_order INTEGER NOT NULL DEFAULT 0").run();
-    database.prepare("ALTER TABLE session_participants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'").run();
-    database.prepare("ALTER TABLE session_participants ADD COLUMN started_at INTEGER").run();
-    database.prepare("ALTER TABLE session_participants ADD COLUMN completed_at INTEGER").run();
+    database
+      .prepare(
+        "ALTER TABLE session_participants ADD COLUMN rotation_order INTEGER NOT NULL DEFAULT 0",
+      )
+      .run();
+    database
+      .prepare(
+        "ALTER TABLE session_participants ADD COLUMN status TEXT NOT NULL DEFAULT 'active'",
+      )
+      .run();
+    database
+      .prepare("ALTER TABLE session_participants ADD COLUMN started_at INTEGER")
+      .run();
+    database
+      .prepare(
+        "ALTER TABLE session_participants ADD COLUMN completed_at INTEGER",
+      )
+      .run();
 
     // Now set values for existing data and create indexes
-    database.prepare("UPDATE session_participants SET started_at = created_at WHERE is_active = 1").run();
-    database.prepare("CREATE INDEX IF NOT EXISTS idx_participants_status ON session_participants(status)").run();
-    database.prepare("CREATE INDEX IF NOT EXISTS idx_participants_rotation ON session_participants(session_id, person_id, rotation_order)").run();
+    database
+      .prepare(
+        "UPDATE session_participants SET started_at = created_at WHERE is_active = 1",
+      )
+      .run();
+    database
+      .prepare(
+        "CREATE INDEX IF NOT EXISTS idx_participants_status ON session_participants(status)",
+      )
+      .run();
+    database
+      .prepare(
+        "CREATE INDEX IF NOT EXISTS idx_participants_rotation ON session_participants(session_id, person_id, rotation_order)",
+      )
+      .run();
 
     console.log("Migration: rotation support added successfully");
   }
@@ -180,7 +212,9 @@ function runMigrations(database: Database.Database): void {
 
   // Create rotation_configs table if missing
   const rotationConfigTables = database
-    .prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='rotation_configs'")
+    .prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='rotation_configs'",
+    )
     .all() as { name: string }[];
 
   if (rotationConfigTables.length === 0) {
@@ -330,7 +364,14 @@ export function seedDatabase(): void {
   const now = Date.now();
 
   // Create people
-  const peopleNames = ["TONY", "SERGIO", "STEVE", "NOAH", "VICTORIA", "KAKES"];
+  const peopleNames = [
+    "TONY",
+    "SERGIO",
+    "STEPHEN",
+    "NOAH",
+    "VICTORIA",
+    "KAKES",
+  ];
   const people: { id: string; name: string }[] = [];
 
   const insertPerson = database.prepare(`
@@ -385,7 +426,7 @@ export function seedDatabase(): void {
     },
     {
       id: crypto.randomUUID(),
-      person_id: people[2].id, // STEVE
+      person_id: people[2].id, // STEPHEN
       exercise_name: "Deadlift",
       weight_unit: "lbs",
       sets: [

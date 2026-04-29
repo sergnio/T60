@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS exercises (
 -- People/Athletes
 CREATE TABLE IF NOT EXISTS people (
   id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),  -- Auto-generated UUID
-  name TEXT NOT NULL,                     -- e.g., "TONY", "STEVE"
+  name TEXT NOT NULL,                     -- e.g., "TONY", "STEPHEN"
   created_at INTEGER NOT NULL DEFAULT (unixepoch()),  -- Auto-generated Unix timestamp
   updated_at INTEGER NOT NULL DEFAULT (unixepoch())   -- Auto-generated Unix timestamp
 );

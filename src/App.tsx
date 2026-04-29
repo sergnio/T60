@@ -15,7 +15,7 @@ import styles from "./App.module.scss";
  */
 function mapParticipantToExercise(
   participant: ParticipantWithSets,
-  barWeight: number = 45,
+  barWeight: number | null,
 ): Exercise {
   return {
     name: participant.exercise_name,
@@ -62,8 +62,8 @@ const App = () => {
   const completeSetMutation = useCompleteSet();
 
   // Build a lookup map for exercise bar weights so we can pass them to WorkoutCard
-  const exerciseBarWeightMap = new Map<string, number>(
-    exercises.map((ex: DbExercise) => [ex.id, ex.bar_weight ?? 0]),
+  const exerciseBarWeightMap = new Map<string, number | null>(
+    exercises.map((ex: DbExercise) => [ex.id, ex.bar_weight]),
   );
 
   // Handle set completion
@@ -151,9 +151,10 @@ const App = () => {
             <div className={styles.exerciseTitle}>{station.exerciseName}</div>
             {station.participants.map((participant) => {
               const { id, is_active } = participant;
-              const barWt = participant.exercise_id
-                ? (exerciseBarWeightMap.get(participant.exercise_id) ?? 45)
-                : 45;
+              const barWt = participant.bar_weight
+                ?? (participant.exercise_id
+                  ? (exerciseBarWeightMap.get(participant.exercise_id) ?? null)
+                  : null);
               const exercise = mapParticipantToExercise(participant, barWt);
               return (
                 <WorkoutCardT18
