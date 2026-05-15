@@ -9,16 +9,16 @@ interface WorkoutTimerProps {
   participants: ParticipantWithSets[];
 }
 
-const INITIAL_REST_DURATION = 60; // 1:00 rest before workout starts
+const INITIAL_REST_DURATION = 3; // 1:00 rest before workout starts
 // const INITIAL_REST_DURATION = 7; // 1:00 rest before workout starts
-const REST_DURATION = 90; // 1:30 rest between all sets
-// const REST_DURATION = 15; // 1:30 rest between all sets
+const REST_DURATION = 103; // 1:43 rest between all sets
+// const REST_DURATION = 15; // 1:43 rest between all sets
 
 function getWorkingSetDuration(setIndex: number): number {
-  // Sets 1 & 2 (index 0-1): 1:20, Sets 3-5 (index 2-4): 1:45
-  if (setIndex <= 1) return 60 + 20;
+  // Sets 1 & 2 (index 0-1): 1:35, Sets 3-5 (index 2-4): 1:43
+  if (setIndex <= 1) return 60 + 35;
   // if (setIndex <= 1) return 10;
-  return 60 + 45;
+  return 60 + 43;
   // return 14;
 }
 
