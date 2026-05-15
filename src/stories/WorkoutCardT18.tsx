@@ -138,12 +138,18 @@ export const WorkoutCardT18 = ({
                     {plate.weight} {exercise.weightUnit}
                   </span>
                   {plate.count > 1 && (
-                    <span className={styles.plateCount}>
-                      × {plate.count} per side
-                    </span>
+                    <span className={styles.plateCount}>per side</span>
                   )}
                 </div>
-                <WeightPlateSVG weight={plate.weight} />
+                {plate.count >= 2 ? (
+                  <div className={styles.plateStack}>
+                    {Array.from({ length: plate.count }).map((_, i) => (
+                      <WeightPlateSVG key={i} weight={plate.weight} />
+                    ))}
+                  </div>
+                ) : (
+                  <WeightPlateSVG weight={plate.weight} />
+                )}
               </div>
             ))}
             {plates.length === 0 && (
