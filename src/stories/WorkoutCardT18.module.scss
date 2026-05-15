@@ -21,11 +21,11 @@
   /* Shadow Colors */
   --workout-card-shadow-base: rgba(0, 0, 0, 0.1);
   --workout-card-shadow-hover: rgba(0, 0, 0, 0.1);
-  --workout-card-shadow-active: rgba(251, 146, 60, 0.5);
+  --workout-card-shadow-active: rgba(194, 65, 12, 0.85);
 
   /* Pulse Animation Colors */
-  --workout-card-pulse-start: rgba(251, 146, 60, 0);
-  --workout-card-pulse-mid: rgba(251, 146, 60, 0.3);
+  --workout-card-pulse-start: rgba(194, 65, 12, 0);
+  --workout-card-pulse-mid: rgba(194, 65, 12, 0.85);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -173,6 +173,14 @@
     color: var(--workout-card-text-tertiary);
     white-space: nowrap;
   }
+}
+
+.plateStack {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.125rem;
+  flex-wrap: wrap;
 }
 
 .barOnly {
