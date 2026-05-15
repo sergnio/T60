@@ -105,6 +105,7 @@ export const WorkoutCardT18 = ({
   const currentWeight = currentSet?.weight || 0;
   const barWeight = exercise.barWeight;
   const plates = barWeight != null ? calculatePlateBreakdown(currentWeight, barWeight) : [];
+  const singleSided = barWeight === 0;
 
   return (
     <div className={`${styles.card} ${isActive ? styles.active : ""}`}>
@@ -137,7 +138,7 @@ export const WorkoutCardT18 = ({
                   <span className={styles.plateWeight}>
                     {plate.weight} {exercise.weightUnit}
                   </span>
-                  {plate.count > 1 && (
+                  {plate.count > 1 && !singleSided && (
                     <span className={styles.plateCount}>per side</span>
                   )}
                 </div>

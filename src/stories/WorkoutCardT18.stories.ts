@@ -61,30 +61,30 @@ export const ActiveWithPlates: Story = {
   },
 };
 
-// Dumbbell exercise with no bar weight — plates show the full weight breakdown
-const dumbbellCurl50: Exercise = {
-  name: "Dumbbell Curl",
+// Plate-loaded machine with no bar — all plates stack on one side.
+const plateLoaded135: Exercise = {
+  name: "Plate-Loaded Machine",
   weightUnit: "lbs",
   sets: [
-    { weight: 25, completed: true },
-    { weight: 35, completed: false },
-    { weight: 40, completed: false },
-    { weight: 40, completed: false },
-    { weight: 40, completed: false },
+    { weight: 45, completed: true },
+    { weight: 95, completed: false },
+    { weight: 135, completed: false },
+    { weight: 135, completed: false },
+    { weight: 135, completed: false },
   ],
-  currentSetIndex: 1,
+  currentSetIndex: 2,
   barWeight: 0,
 };
 
 /**
- * Dumbbell exercise with bar weight = 0.
- * Demonstrates that the plate breakdown shows the full weight
- * without subtracting a bar offset (TONY-99).
+ * Exercise with bar weight = 0 — plates stack on a single side
+ * rather than mirrored across two (TONY-122). 135 lb resolves to
+ * three 45 plates on one stack instead of "1×45 per side".
  */
-export const DumbbellNoBar: Story = {
+export const SingleSidedNoBar: Story = {
   args: {
     personName: "SERGIO",
-    exercise: dumbbellCurl50,
+    exercise: plateLoaded135,
     isActive: true,
   },
 };

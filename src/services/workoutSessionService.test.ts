@@ -3,7 +3,10 @@
  * Ensures that calculated weights can actually be loaded with available plates
  */
 import { describe, it, expect } from "vitest";
-import { calculateLoadableWeight } from "../utils/weightCalculation.js";
+import {
+  calculateLoadableWeight,
+  calculatePlateBreakdown,
+} from "../utils/weightCalculation.js";
 
 describe("calculateLoadableWeight", () => {
   const BAR_WEIGHT = 45;
@@ -199,6 +202,45 @@ describe("calculateLoadableWeight", () => {
     it("should round up very small additions above bar weight", () => {
       // 45 + 0.1 per side → remainder > 0 → ceil adds 2.5 per side
       expect(calculateLoadableWeight(45.2, BAR_WEIGHT)).toBe(50);
+    });
+  });
+
+  describe("Single-sided loading (bar weight = 0)", () => {
+    it("loads the full target onto one side when there is no bar", () => {
+      expect(calculateLoadableWeight(135, 0)).toBe(135); // 3×45
+      expect(calculateLoadableWeight(100, 0)).toBe(100); // 2×45 + 1×10
+      expect(calculateLoadableWeight(50, 0)).toBe(50);   // 1×45 + 1×5
+      expect(calculateLoadableWeight(7.5, 0)).toBe(7.5); // 1×5 + 1×2.5
+    });
+
+    it("returns 0 when target and bar are both 0", () => {
+      expect(calculateLoadableWeight(0, 0)).toBe(0);
+    });
+
+    it("rounds up single-sided when target is not exactly achievable", () => {
+      // 7.6 → greedy fits 1×5 + 1×2.5 = 7.5, remainder 0.1 → ceil adds 2.5
+      expect(calculateLoadableWeight(7.6, 0)).toBe(10);
+    });
+
+    it("produces a single-stack breakdown (not per-side)", () => {
+      expect(calculatePlateBreakdown(135, 0)).toEqual([
+        { weight: 45, count: 3 },
+      ]);
+      expect(calculatePlateBreakdown(100, 0)).toEqual([
+        { weight: 45, count: 2 },
+        { weight: 10, count: 1 },
+      ]);
+    });
+
+    it("still returns per-side breakdown when bar weight > 0 (regression)", () => {
+      expect(calculatePlateBreakdown(135, 45)).toEqual([
+        { weight: 45, count: 1 },
+      ]);
+    });
+
+    it("does not regress the two-sided math when bar weight > 0", () => {
+      expect(calculateLoadableWeight(135, 45)).toBe(135);
+      expect(calculateLoadableWeight(225, 45)).toBe(225);
     });
   });
 
