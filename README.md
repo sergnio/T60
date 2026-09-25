@@ -1,6 +1,10 @@
-# Electron + React + Typescript + Tailwind Starter App
+# 1 Hour Workout
 
-An app for using electron/react/typescript and tailwind css to create multi-platform desktop app.
+A desktop app for timed group workouts. It tracks each person's max weights, calculates
+the working weight for the day, and runs an automatic timer that switches exercises so
+everyone can work out together without stepping on each other's sets.
+
+Built solo with Electron, React, TypeScript, and SQLite.
 
 ## Basic Commands
 
